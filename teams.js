@@ -46,7 +46,7 @@ function createTeam(req, res, team) {
         delete team.permissions;
       }
       var id = uuid();
-      var selfURL = makeSelfURL(id, req);
+      var selfURL = makeSelfURL(req, id);
       lib.createPermissonsFor(req, res, selfURL, permissions, function(permissionsURL, permissions){
         // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
         // there will be a useless but harmless permissions document.
@@ -65,7 +65,7 @@ function makeSelfURL(req, key) {
 }
 
 function getTeam(req, res, id) {
-  lib.ifAllowedThen(req, res, '_governs', 'read', function() {
+  lib.ifAllowedThen(req, res, '_resource', 'read', function() {
     db.withTeamDo(req, res, id, function(team , etag) {
       team._self = makeSelfURL(req, id);
       team._permissions = `protocol://authority/permissions?${team._self}`;
