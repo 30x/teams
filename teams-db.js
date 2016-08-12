@@ -25,7 +25,7 @@ function createTeamThen(req, res, id, selfURL, team, callback) {
 }
 
 function withTeamDo(req, res, id, callback) {
-  lib.ifAllowedThen(req, res, 'read', function() {
+  lib.ifAllowedThen(req, res, '_governs', 'read', function() {
     pool.query('SELECT etag, data FROM teams WHERE id = $1', [id], function (err, pg_res) {
       if (err) {
         lib.internalError(res, err);
@@ -36,7 +36,7 @@ function withTeamDo(req, res, id, callback) {
         }
         else {
           var row = pg_res.rows[0];
-          callabck(row.data, row.etag);
+          callback(row.data, row.etag);
         }
       }
     });

@@ -60,15 +60,17 @@ function createTeam(req, res, team) {
   }
 }
 
-function makeSelfURL(key, req) {
+function makeSelfURL(req, key) {
   return PROTOCOL + '://' + req.headers.host + TEAMS + key;
 }
 
 function getTeam(req, res, id) {
-  lib.ifAllowedThen(req, res, 'read', function() {
+  lib.ifAllowedThen(req, res, '_governs', 'read', function() {
     db.withTeamDo(req, res, id, function(team , etag) {
+      team._self = makeSelfURL(req, id);
+      team._permissions = `protocol://authority/permissions?${team._self}`;
+      team._permissionsHeirs = `protocol://authority/permissions-heirs?${team._self}`;
       lib.externalizeURLs(team, req.headers.host, PROTOCOL);
-      row.data._self = selfURL(req, id); 
       lib.found(req, res, team, etag);
     });
   });
