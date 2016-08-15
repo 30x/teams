@@ -43,6 +43,18 @@ function withTeamDo(req, res, id, callback) {
   });
 }
 
+function withTeamsForUserDo(req, res, user, callback) {
+  var query = "SELECT id FROM teams, jsonb_array_elements(teams.data->'members') AS member WHERE member = $1"
+  pool.query(query, [JSON.stringify(user)], function (err, pg_res) {
+    if (err) {
+      lib.internalError(res, err);
+    }
+    else {
+      callback(pg_res.rows.map(row => row.id));
+    }
+  });
+}
+    
 function deleteTeamThen(req, res, id, callback) {
   var query = `DELETE FROM teams WHERE id = '${id}' RETURNING *`;
   function eventData(pgResult) {
@@ -54,7 +66,7 @@ function deleteTeamThen(req, res, id, callback) {
 
 }
 
-function updateTeamThen(req, res, id, patchedTeam, etag, callback) {
+function updateTeamThen(req, res, id, team, patchedTeam, etag, callback) {
   lib.internalizeURLs(patchedTeam, req.headers.host);
   var key = lib.internalizeURL(id, req.headers.host);
   var query = `UPDATE teams SET data = ('${JSON.stringify(patchedTeam)}') WHERE subject = '${key}' AND etag = ${etag} RETURNING etag`;
@@ -81,4 +93,5 @@ exports.createTeamThen = createTeamThen;
 exports.updateTeamThen = updateTeamThen;
 exports.deleteTeamThen = deleteTeamThen;
 exports.withTeamDo = withTeamDo;
+exports.withTeamsForUserDo = withTeamsForUserDo;
 exports.init = init;

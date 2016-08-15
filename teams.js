@@ -76,38 +76,28 @@ function getTeam(req, res, id) {
   });
 }
 
+function ifAllowedThen(req, res, subject, property, action, callback) {
+  lib.ifAllowedThen(req, res, subject, property, action, function() {
+    db.withTeamDo(req, res, subject, function(team, etag) {
+      callback(permissions, etag);
+    });
+  });
+}
+
 function deleteTeam(req, res, id) {
   lib.ifAllowedThen(req, res, 'delete', function() {
-    pool.query('DELETE FROM teams WHERE id = $1 RETURNING *', [id], function (err, pg_res) {
-      if (err) { 
-        lib.badRequest(res, err);
-      } else { 
-        if (pg_res.rowCount === 0) {
-          lib.notFound(req, res);
-        } else {
-          var team = pg_res.rows[0];
-          lib.found(req, res, team, team.etag);
-        }
-      }
+    db.deleteTeamThen(req, res, id, function (team, etag) {
+      lib.found(req, res, team, team.etag);
     });
   });
 }
 
 function updateTeam(req, res, id, patch) {
   lib.ifAllowedThen(req, res, 'update', function(team, etag) {
-    var patchedTeam = mergePatch(team, patch);
-    pool.query('UPDATE team SET data = ($1) WHERE id = $2 RETURNING etag' , [patchedPermissions, id], function (err, pg_res) {
-      if (err) { 
-        lib.internalError(res, err);
-      } else {
-        if (pg_res.rowCount === 0) { 
-          lib.notFound(req, res);
-        } else {
-          var row = pg_res.rows[0];
-          patchedPermissions._self = selfURL(id, req); 
-          lib.found(req, res, team, row.etag);
-        }
-      }
+    var patchedTeam = lib.mergePatch(team, patch);
+    db.updateTeamThen(req, res, id, team, patchedTeam, etag, function (etag) {
+      patchedPermissions._self = selfURL(id, req); 
+      lib.found(req, res, team, etag);
     });
   });
 }
@@ -116,18 +106,13 @@ function getTeamsForUser(req, res, user) {
   var requestingUser = lib.getUser(req);
   user = lib.internalizeURL(user, req.headers.host);
   if (user == requestingUser) {
-    var query = "SELECT id FROM teams, jsonb_array_elements(teams.data->'members') AS member WHERE member = $1"
-    //var query = 'SELECT id FROM teams WHERE $1 IN teams.data.members';
-    pool.query(query, [JSON.stringify(user)], function (err, pg_res) {
-      if (err) {
-        lib.internalError(res, err);
+    db.withTeamsForUserDo(req, res, user, function (teamIDs) {
+      var rslt = {
+        _self: `protocol://authority${req.url}`,
+        contents: teamIDs.map(id => `${PROTOCOL}://${req.headers.host}${TEAMS}${id}`)
       }
-      else {
-        var result = [];
-        var rows = pg_res.rows;
-        for (var i = 0; i < rows.length; i++) {result.push(PROTOCOL + '://' + req.headers.host + TEAMS + rows[i].id);}
-        lib.found(req, res, result);
-      }
+      lib.externalizeURLs(rslt);
+      lib.found(req, res, rslt);
     });
   } else {
     lib.forbidden(req, res)
