@@ -1,6 +1,5 @@
 'use strict';
 var http = require('http');
-var Pool = require('pg').Pool;
 var url = require('url');
 var lib = require('http-helper-functions');
 var uuid = require('node-uuid');
@@ -8,15 +7,6 @@ var db = require('./teams-db.js');
 
 var PROTOCOL = process.env.PROTOCOL || 'http';
 var TEAMS = '/teams/';
-
-var config = {
-  host: 'localhost',
-  user: 'martinnally',
-  password: 'martinnally',
-  database: 'permissions'
-};
-
-var pool = new Pool(config);
 
 function verifyTeam(req, team, user) {
   var rslt = lib.setStandardCreationProperties(req, team, user);
@@ -148,7 +138,6 @@ function requestHandler(req, res) {
     }
   }
 }
-
 db.init(function(){
   var port = process.env.PORT;
   http.createServer(requestHandler).listen(port, function() {

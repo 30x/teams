@@ -4,10 +4,10 @@ var lib = require('http-helper-functions');
 var pge = require('pg-event-producer');
 
 var config = {
-  host: 'localhost',
-  user: 'martinnally',
-  password: 'martinnally',
-  database: 'permissions'
+  host: process.env.PG_HOST,
+  user: process.env.PG_USER,
+  password: process.env.PG_PASSWORD,
+  database: process.env.PG_DATABASE
 };
 
 var pool = new Pool(config);
@@ -84,10 +84,15 @@ function init(callback) {
     if(err) {
       console.error('error creating permissions table', err);
     } else {
+      console.log("init event producer")
       eventProducer.init(callback);
     }
   });    
 }
+
+process.on('unhandledRejection', function(e) {
+  console.log(e.message, e.stack)
+})
 
 exports.createTeamThen = createTeamThen;
 exports.updateTeamThen = updateTeamThen;
