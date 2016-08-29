@@ -79,7 +79,7 @@ function updateTeamThen(req, res, id, team, patchedTeam, etag, callback) {
 }
 
 function init(callback) {
-  var query = 'CREATE TABLE IF NOT EXISTS permissions (subject text primary key, etag serial, data jsonb);'
+  var query = 'CREATE TABLE IF NOT EXISTS teams (id text primary key, etag serial, data jsonb);'
   pool.query(query, function(err, pgResult) {
     if(err) {
       console.error('error creating permissions table', err);
