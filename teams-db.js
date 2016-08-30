@@ -84,7 +84,7 @@ function init(callback) {
     if(err) {
       console.error('error creating permissions table', err);
     } else {
-      console.log("init event producer")
+      console.log(`connected to PG at ${config.host}`);
       eventProducer.init(callback);
     }
   });    
