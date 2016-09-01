@@ -15,12 +15,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mpnally/teams.git"
+    "url": "git+https://github.com/30x/teams.git"
   },
   "author": "Martin Nally",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/mpnally/teams/issues"
+    "url": "https://github.com/30x/teams/issues"
   },
-  "homepage": "https://github.com/mpnally/teams#readme"
+  "homepage": "https://github.com/30x/teams#readme"
 }
