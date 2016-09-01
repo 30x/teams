@@ -5,7 +5,6 @@ var lib = require('http-helper-functions');
 var uuid = require('node-uuid');
 var db = require('./teams-db.js');
 
-var PROTOCOL = process.env.PROTOCOL || 'http';
 var TEAMS = '/teams/';
 
 function verifyTeam(req, team, user) {
@@ -51,7 +50,7 @@ function createTeam(req, res, team) {
 }
 
 function makeSelfURL(req, key) {
-  return PROTOCOL + '://' + req.headers.host + TEAMS + key;
+  return '//' + req.headers.host + TEAMS + key;
 }
 
 function getTeam(req, res, id) {
@@ -60,7 +59,7 @@ function getTeam(req, res, id) {
       team._self = makeSelfURL(req, id);
       team._permissions = `protocol://authority/permissions?${team._self}`;
       team._permissionsHeirs = `protocol://authority/permissions-heirs?${team._self}`;
-      lib.externalizeURLs(team, req.headers.host, PROTOCOL);
+      lib.externalizeURLs(team, req.headers.host);
       lib.found(req, res, team, etag);
     });
   });
@@ -99,7 +98,7 @@ function getTeamsForUser(req, res, user) {
     db.withTeamsForUserDo(req, res, user, function (teamIDs) {
       var rslt = {
         _self: `protocol://authority${req.url}`,
-        contents: teamIDs.map(id => `${PROTOCOL}://${req.headers.host}${TEAMS}${id}`)
+        contents: teamIDs.map(id => `//${req.headers.host}${TEAMS}${id}`)
       }
       lib.externalizeURLs(rslt);
       lib.found(req, res, rslt);
