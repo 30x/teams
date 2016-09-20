@@ -25,21 +25,19 @@ function createTeamThen(req, res, id, selfURL, team, callback) {
 }
 
 function withTeamDo(req, res, id, callback) {
-  lib.ifAllowedThen(req, res, '_resource', 'read', function() {
-    pool.query('SELECT etag, data FROM teams WHERE id = $1', [id], function (err, pg_res) {
-      if (err) {
-        lib.internalError(res, err);
+  pool.query('SELECT etag, data FROM teams WHERE id = $1', [id], function (err, pg_res) {
+    if (err) {
+      lib.internalError(res, err);
+    }
+    else {
+      if (pg_res.rowCount === 0) { 
+        lib.notFound(req, res);
       }
       else {
-        if (pg_res.rowCount === 0) { 
-          lib.notFound(req, res);
-        }
-        else {
-          var row = pg_res.rows[0];
-          callback(row.data, row.etag);
-        }
+        var row = pg_res.rows[0];
+        callback(row.data, row.etag);
       }
-    });
+    }
   });
 }
 

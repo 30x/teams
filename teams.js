@@ -65,14 +65,6 @@ function getTeam(req, res, id) {
   });
 }
 
-function ifAllowedThen(req, res, subject, property, action, callback) {
-  lib.ifAllowedThen(req, res, subject, property, action, function() {
-    db.withTeamDo(req, res, subject, function(team, etag) {
-      callback(permissions, etag);
-    });
-  });
-}
-
 function deleteTeam(req, res, id) {
   lib.ifAllowedThen(req, res, 'delete', function() {
     db.deleteTeamThen(req, res, id, function (team, etag) {
