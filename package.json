@@ -4,10 +4,10 @@
   "description": "",
   "main": "teams.js",
   "dependencies": {
-    "http-helper-functions": "^0.0.14",
+    "http-helper-functions": "^0.0.15",
     "node-uuid": "^1.4.7",
     "pg": "^6.0.3",
-    "pg-event-producer": "^0.0.9"
+    "pg-event-producer": "^0.0.10"
   },
   "devDependencies": {},
   "scripts": {
