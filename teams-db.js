@@ -15,7 +15,7 @@ var eventProducer = new pge.eventProducer(pool);
 
 function createTeamThen(req, res, id, selfURL, team, callback) {
   lib.internalizeURLs(team, req.headers.host);
-  var query = `INSERT INTO teams (id, data) values('${id}', '${JSON.stringify(team)}') RETURNING etag`;
+  var query = `INSERT INTO teams (id, etag, data) values('${id}', 1, '${JSON.stringify(team)}') RETURNING etag`;
   function eventData(pgResult) {
     return {id: selfURL, action: 'create', etag: pgResult.rows[0].etag, team: team}
   }
@@ -67,7 +67,7 @@ function deleteTeamThen(req, res, id, callback) {
 function updateTeamThen(req, res, id, team, patchedTeam, etag, callback) {
   lib.internalizeURLs(patchedTeam, req.headers.host);
   var key = lib.internalizeURL(id, req.headers.host);
-  var query = `UPDATE teams SET data = ('${JSON.stringify(patchedTeam)}') WHERE subject = '${key}' AND etag = ${etag} RETURNING etag`;
+  var query = `UPDATE teams SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(patchedTeam)}') WHERE subject = '${key}' AND etag = ${etag} RETURNING etag`;
   function eventData(pgResult) {
     return {id: id, action: 'update', etag: pgResult.rows[0].etag, before: team, after: patchedTeam}
   }
@@ -77,7 +77,7 @@ function updateTeamThen(req, res, id, team, patchedTeam, etag, callback) {
 }
 
 function init(callback) {
-  var query = 'CREATE TABLE IF NOT EXISTS teams (id text primary key, etag serial, data jsonb);'
+  var query = 'CREATE TABLE IF NOT EXISTS teams (id text primary key, etag int, data jsonb);'
   pool.query(query, function(err, pgResult) {
     if(err) {
       console.error('error creating permissions table', err);
