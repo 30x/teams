@@ -54,7 +54,7 @@ function makeSelfURL(req, key) {
 }
 
 function getTeam(req, res, id) {
-  lib.ifAllowedThen(req, res, '_resource', 'read', function() {
+  lib.ifAllowedThen(req, res, null, '_resource', 'read', function() {
     db.withTeamDo(req, res, id, function(team , etag) {
       team._self = makeSelfURL(req, id);
       team._permissions = `protocol://authority/permissions?${team._self}`;
@@ -66,7 +66,7 @@ function getTeam(req, res, id) {
 }
 
 function deleteTeam(req, res, id) {
-  lib.ifAllowedThen(req, res, 'delete', function() {
+  lib.ifAllowedThen(req, res, null, 'delete', function() {
     db.deleteTeamThen(req, res, id, function (team, etag) {
       lib.found(req, res, team, team.etag);
     });
@@ -74,7 +74,7 @@ function deleteTeam(req, res, id) {
 }
 
 function updateTeam(req, res, id, patch) {
-  lib.ifAllowedThen(req, res, 'update', function(team, etag) {
+  lib.ifAllowedThen(req, res, null, 'update', function(team, etag) {
     var patchedTeam = lib.mergePatch(team, patch);
     db.updateTeamThen(req, res, id, team, patchedTeam, etag, function (etag) {
       patchedPermissions._self = selfURL(id, req); 
@@ -103,7 +103,7 @@ function getTeamsForUser(req, res, user) {
 function requestHandler(req, res) {
   if (req.url == '/teams') {
     if (req.method == 'POST') {
-      lib.getServerPostBody(req, res, createTeam);
+      lib.getServerPostObject(req, res, createTeam);
     } else { 
       lib.methodNotAllowed(req, res, ['POST']);
     }
