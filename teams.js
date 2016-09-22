@@ -41,8 +41,8 @@ function createTeam(req, res, team) {
         // there will be a useless but harmless permissions document.
         // If we do things the other way around, a team without matching permissions could cause problems.
         db.createTeamThen(req, res, id, selfURL, team, function(etag) {
-          team._self = selfURL; 
-          lib.created(req, res, team, team._self, etag);
+          team.self = selfURL; 
+          lib.created(req, res, team, team.self, etag);
         });
       });
     }
@@ -56,9 +56,9 @@ function makeSelfURL(req, key) {
 function getTeam(req, res, id) {
   lib.ifAllowedThen(req, res, null, '_resource', 'read', function() {
     db.withTeamDo(req, res, id, function(team , etag) {
-      team._self = makeSelfURL(req, id);
-      team._permissions = `protocol://authority/permissions?${team._self}`;
-      team._permissionsHeirs = `protocol://authority/permissions-heirs?${team._self}`;
+      team.self = makeSelfURL(req, id);
+      team._permissions = `protocol://authority/permissions?${team.self}`;
+      team._permissionsHeirs = `protocol://authority/permissions-heirs?${team.self}`;
       lib.externalizeURLs(team, req.headers.host);
       lib.found(req, res, team, etag);
     });
@@ -77,7 +77,7 @@ function updateTeam(req, res, id, patch) {
   lib.ifAllowedThen(req, res, null, 'update', function(team, etag) {
     var patchedTeam = lib.mergePatch(team, patch);
     db.updateTeamThen(req, res, id, team, patchedTeam, etag, function (etag) {
-      patchedPermissions._self = selfURL(id, req); 
+      patchedPermissions.self = selfURL(id, req); 
       lib.found(req, res, team, etag);
     });
   });
@@ -89,7 +89,7 @@ function getTeamsForUser(req, res, user) {
   if (user == requestingUser) {
     db.withTeamsForUserDo(req, res, user, function (teamIDs) {
       var rslt = {
-        _self: `protocol://authority${req.url}`,
+        self: `protocol://authority${req.url}`,
         contents: teamIDs.map(id => `//${req.headers.host}${TEAMS}${id}`)
       }
       lib.externalizeURLs(rslt);
