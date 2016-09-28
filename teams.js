@@ -75,12 +75,13 @@ function deleteTeam(req, res, id) {
 
 function updateTeam(req, res, id, patch) {
   lib.ifAllowedThen(req, res, null, '_resource', 'update', function(team, etag) {
-    var patchedTeam = lib.mergePatch(team, patch);
-    db.updateTeamThen(req, res, id, team, patchedTeam, etag, function (etag) {
-      patchedPermissions.self = selfURL(id, req); 
-      lib.found(req, res, team, etag);
-    });
-  });
+    lib.applyPatch(req, res, team, patch, function(patchedTeam) {
+      db.updateTeamThen(req, res, id, team, patchedTeam, etag, function (etag) {
+        patchedPermissions.self = selfURL(id, req); 
+        lib.found(req, res, team, etag);
+      })
+    })
+  })
 }
 
 function getTeamsForUser(req, res, user) {
