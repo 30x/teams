@@ -54,7 +54,7 @@ function makeSelfURL(req, key) {
 }
 
 function getTeam(req, res, id) {
-  lib.ifAllowedThen(req, res, null, '_resource', 'read', function() {
+  lib.ifAllowedThen(req, res, null, '_self', 'read', function() {
     db.withTeamDo(req, res, id, function(team , etag) {
       team.self = makeSelfURL(req, id);
       team._permissions = `protocol://authority/permissions?${team.self}`;
@@ -66,7 +66,7 @@ function getTeam(req, res, id) {
 }
 
 function deleteTeam(req, res, id) {
-  lib.ifAllowedThen(req, res, null, '_resource', 'delete', function() {
+  lib.ifAllowedThen(req, res, null, '_self', 'delete', function() {
     db.deleteTeamThen(req, res, id, function (team, etag) {
       lib.found(req, res, team, team.etag);
     });
@@ -74,7 +74,7 @@ function deleteTeam(req, res, id) {
 }
 
 function updateTeam(req, res, id, patch) {
-  lib.ifAllowedThen(req, res, null, '_resource', 'update', function(team, etag) {
+  lib.ifAllowedThen(req, res, null, '_self', 'update', function(team, etag) {
     lib.applyPatch(req, res, team, patch, function(patchedTeam) {
       db.updateTeamThen(req, res, id, team, patchedTeam, etag, function (etag) {
         patchedPermissions.self = selfURL(id, req); 
