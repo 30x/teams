@@ -1,6 +1,6 @@
-'use strict';
-var Pool = require('pg').Pool;
-var lib = require('http-helper-functions');
+'use strict'
+var Pool = require('pg').Pool
+var lib = require('http-helper-functions')
 const db = require('./teams-pg.js')
 
 function withErrorHandling(req, res, callback) {
@@ -38,9 +38,9 @@ function init(callback) {
   db.init(callback)
 }
 
-exports.createTeamThen = createTeamThen;
-exports.updateTeamThen = updateTeamThen;
-exports.deleteTeamThen = deleteTeamThen;
-exports.withTeamDo = withTeamDo;
-exports.withTeamsForUserDo = withTeamsForUserDo;
-exports.init = init;
+exports.createTeamThen = createTeamThen
+exports.updateTeamThen = updateTeamThen
+exports.deleteTeamThen = deleteTeamThen
+exports.withTeamDo = withTeamDo
+exports.withTeamsForUserDo = withTeamsForUserDo
+exports.init = init
