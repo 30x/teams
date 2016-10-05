@@ -2,7 +2,6 @@
 var http = require('http')
 var url = require('url')
 var lib = require('http-helper-functions')
-var uuid = require('node-uuid')
 var db = require('./teams-db.js')
 
 var TEAMS = '/teams/'
@@ -31,9 +30,9 @@ function createTeam(req, res, team) {
       var permissions = team.permissions
       if (permissions !== undefined)
         delete team.permissions
-      var id = uuid()
+      var id = lib.uuid4()
       var selfURL = makeSelfURL(req, id)
-      lib.createPermissonsFor(req, res, selfURL, permissions, function(permissionsURL, permissions){
+      lib.createPermissonsFor(req, res, selfURL, permissions, function(permissionsURL, permissions, responseHeaders){
         // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
         // there will be a useless but harmless permissions document.
         // If we do things the other way around, a team without matching permissions could cause problems.
