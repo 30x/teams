@@ -14,7 +14,6 @@ var pool = new Pool(config)
 var eventProducer = new pge.eventProducer(pool)
 
 function createTeamThen(req, id, selfURL, team, callback) {
-  lib.internalizeURLs(team, req.headers.host)
   var query = `INSERT INTO teams (id, etag, data) values('${id}', 1, '${JSON.stringify(team)}') RETURNING etag`
   function eventData(pgResult) {
     return {id: selfURL, action: 'create', etag: pgResult.rows[0].etag, team: team}
@@ -64,7 +63,6 @@ function deleteTeamThen(req, id, callback) {
 }
 
 function updateTeamThen(req, id, team, patchedTeam, etag, callback) {
-  lib.internalizeURLs(patchedTeam, req.headers.host)
   var key = lib.internalizeURL(id, req.headers.host)
   var query = `UPDATE teams SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(patchedTeam)}') WHERE subject = '${key}' AND etag = ${etag} RETURNING etag`
   function eventData(pgResult) {

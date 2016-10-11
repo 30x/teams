@@ -26,7 +26,6 @@ function createTeam(req, res, team) {
     if (err !== null) 
       lib.badRequest(res, err)
     else {
-      lib.internalizeURLs(team, req.headers.host) 
       var permissions = team.permissions
       if (permissions !== undefined)
         delete team.permissions
