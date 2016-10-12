@@ -37,6 +37,7 @@ function createTeam(req, res, team) {
         // If we do things the other way around, a team without matching permissions could cause problems.
         db.createTeamThen(req, res, id, selfURL, team, function(etag) {
           team.self = selfURL 
+          team._permissions = `protocol://authority/permissions?${team.self}`
           lib.created(req, res, team, team.self, etag)
         })
       })
@@ -110,7 +111,7 @@ function requestHandler(req, res) {
       else if (req.method == 'DELETE') 
         deleteTeam(req, res, id)
       else if (req.method == 'PATCH') 
-        lib.getPostBody(req, res, function (req, res, jso) {
+        lib.getServerPostObject(req, res, function (req, res, jso) {
           updateTeam(req, res, id, jso)
         })
       else
