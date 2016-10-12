@@ -1,1 +1,1 @@
-docker push thirtyx/teams:0.0.11
+docker push thirtyx/teams:0.0.12
