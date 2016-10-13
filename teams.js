@@ -1,8 +1,9 @@
 'use strict'
-var http = require('http')
-var url = require('url')
-var lib = require('http-helper-functions')
-var db = require('./teams-db.js')
+const http = require('http')
+const url = require('url')
+const lib = require('http-helper-functions')
+const db = require('./teams-db.js')
+const pLib = require('permissions-helper-functions')
 
 var TEAMS = '/teams/'
 
@@ -26,11 +27,13 @@ function createTeam(req, res, team) {
     if (err !== null) 
       lib.badRequest(res, err)
     else {
-      var permissions = team.permissions
-      if (permissions !== undefined)
-        delete team.permissions
       var id = lib.uuid4()
       var selfURL = makeSelfURL(req, id)
+      var permissions = team.permissions
+      if (permissions !== undefined) {
+        delete team.permissions; // interesting unusual case where ; is necessary
+        (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
+      }
       lib.createPermissonsFor(req, res, selfURL, permissions, function(permissionsURL, permissions, responseHeaders){
         // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
         // there will be a useless but harmless permissions document.
