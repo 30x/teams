@@ -62,33 +62,44 @@ function makeSelfURL(req, key) {
 }
 
 function getTeam(req, res, id) {
-  lib.ifAllowedThen(req, res, null, '_self', 'read', function() {
-    db.withTeamDo(req, res, id, function(team , etag) {
-      team.self = makeSelfURL(req, id)
-      team._permissions = `protocol://authority/permissions?${team.self}`
-      team._permissionsHeirs = `protocol://authority/permissions-heirs?${team.self}`
-      lib.externalizeURLs(team, req.headers.host)
-      lib.found(req, res, team, etag)
-    })
+  pLib.ifAllowedThen(req.headers, null, '_self', 'read', function(err, reason) {
+    if (err)
+      lib.internalError(res, reason)
+    else
+      db.withTeamDo(req, res, id, function(team , etag) {
+        team.self = makeSelfURL(req, id)
+        team._permissions = `protocol://authority/permissions?${team.self}`
+        team._permissionsHeirs = `protocol://authority/permissions-heirs?${team.self}`
+        lib.externalizeURLs(team, req.headers.host)
+        lib.found(req, res, team, etag)
+      })
   })
 }
 
 function deleteTeam(req, res, id) {
-  lib.ifAllowedThen(req, res, null, '_self', 'delete', function() {
-    db.deleteTeamThen(req, res, id, function (team, etag) {
-      lib.found(req, res, team, team.etag)
-    })
+  pLib.ifAllowedThen(req.headers, null, '_self', 'delete', function(err, reason) {
+    if (err)
+      lib.internalError(res, reason)
+    else
+      db.deleteTeamThen(req, res, id, function (team, etag) {
+        lib.found(req, res, team, team.etag)
+      })
   })
 }
 
 function updateTeam(req, res, id, patch) {
-  lib.ifAllowedThen(req, res, null, '_self', 'update', function(team, etag) {
-    lib.applyPatch(req, res, team, patch, function(patchedTeam) {
-      db.updateTeamThen(req, res, id, team, patchedTeam, etag, function (etag) {
-        patchedPermissions.self = selfURL(id, req) 
-        lib.found(req, res, team, etag)
+  pLib.ifAllowedThen(req.headers, null, '_self', 'update', function(err, reason) {
+    if (err)
+      lib.internalError(res, reason)
+    else
+      db.withTeamDo(req, res, id, function(team , etag) {
+        lib.applyPatch(req, res, team, patch, function(patchedTeam) {
+          db.updateTeamThen(req, res, id, team, patchedTeam, etag, function (etag) {
+            patchedPermissions.self = selfURL(id, req) 
+            lib.found(req, res, team, etag)
+          })
+        })
       })
-    })
   })
 }
 
