@@ -19,7 +19,7 @@ function verifyTeam(req, team, user) {
 }
 
 function createTeam(req, res, team) {
-  var user = lib.getUser(req)
+  var user = lib.getUser(req.headers.authorization)
   if (user == null)
     lib.unauthorized(req, res)
   else { 
@@ -34,15 +34,24 @@ function createTeam(req, res, team) {
         delete team.permissions; // interesting unusual case where ; is necessary
         (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
       }
-      lib.createPermissonsFor(req, res, selfURL, permissions, function(permissionsURL, permissions, responseHeaders){
-        // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
-        // there will be a useless but harmless permissions document.
-        // If we do things the other way around, a team without matching permissions could cause problems.
-        db.createTeamThen(req, res, id, selfURL, team, function(etag) {
-          team.self = selfURL 
-          team._permissions = `protocol://authority/permissions?${team.self}`
-          lib.created(req, res, team, team.self, etag)
-        })
+      pLib.createPermissionsFor(req.headers, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
+        if (err == 401)
+          lib.forbidden(req, res)
+        else if (err == 400)
+          lib.badRequest(res, permissionsURL)
+        else if (err == 500)
+          lib.internalError(res, permissionsURL)
+        else if (err == 403)
+          lib.forbidden(req, res)
+        else
+          // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
+          // there will be a useless but harmless permissions document.
+          // If we do things the other way around, a team without matching permissions could cause problems.
+          db.createTeamThen(req, res, id, selfURL, team, function(etag) {
+            team.self = selfURL 
+            team._permissions = `protocol://authority/permissions?${team.self}`
+            lib.created(req, res, team, team.self, etag)
+          })
       })
     }
   }
@@ -84,7 +93,7 @@ function updateTeam(req, res, id, patch) {
 }
 
 function getTeamsForUser(req, res, user) {
-  var requestingUser = lib.getUser(req)
+  var requestingUser = lib.getUser(req.headers.authorization)
   user = lib.internalizeURL(user, req.headers.host)
   if (user == requestingUser) {
     db.withTeamsForUserDo(req, res, user, function (teamIDs) {
