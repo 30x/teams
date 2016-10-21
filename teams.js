@@ -49,7 +49,7 @@ function createTeam(req, res, team) {
           // If we do things the other way around, a team without matching permissions could cause problems.
           db.createTeamThen(req, res, id, selfURL, team, function(etag) {
             team.self = selfURL 
-            team._permissions = `protocol://authority/permissions?${team.self}`
+            team._permissions = `scheme://authority/permissions?${team.self}`
             lib.created(req, res, team, team.self, etag)
           })
       })
@@ -65,8 +65,8 @@ function getTeam(req, res, id) {
   pLib.ifAllowedThen(req, res, null, '_self', 'read', function(err, reason) {
     db.withTeamDo(req, res, id, function(team , etag) {
       team.self = makeSelfURL(req, id)
-      team._permissions = `protocol://authority/permissions?${team.self}`
-      team._permissionsHeirs = `protocol://authority/permissions-heirs?${team.self}`
+      team._permissions = `scheme://authority/permissions?${team.self}`
+      team._permissionsHeirs = `scheme://authority/permissions-heirs?${team.self}`
       lib.externalizeURLs(team, req.headers.host)
       lib.found(req, res, team, etag)
     })
@@ -100,7 +100,7 @@ function getTeamsForUser(req, res, user) {
   if (user == requestingUser) {
     db.withTeamsForUserDo(req, res, user, function (teamIDs) {
       var rslt = {
-        self: `protocol://authority${req.url}`,
+        self: `scheme://authority${req.url}`,
         contents: teamIDs.map(id => `//${req.headers.host}${TEAMS}${id}`)
       }
       lib.externalizeURLs(rslt)
