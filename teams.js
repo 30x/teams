@@ -34,24 +34,15 @@ function createTeam(req, res, team) {
         delete team.permissions; // interesting unusual case where ; is necessary
         (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
       }
-      pLib.createPermissionsFor(req.headers, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
-        if (err == 401)
-          lib.forbidden(req, res)
-        else if (err == 400)
-          lib.badRequest(res, permissionsURL)
-        else if (err == 500)
-          lib.internalError(res, permissionsURL)
-        else if (err == 403)
-          lib.forbidden(req, res)
-        else
-          // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
-          // there will be a useless but harmless permissions document.
-          // If we do things the other way around, a team without matching permissions could cause problems.
-          db.createTeamThen(req, res, id, selfURL, team, function(etag) {
-            team.self = selfURL 
-            team._permissions = `scheme://authority/permissions?${team.self}`
-            lib.created(req, res, team, team.self, etag)
-          })
+      pLib.createPermissionsThen(req, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
+        // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
+        // there will be a useless but harmless permissions document.
+        // If we do things the other way around, a team without matching permissions could cause problems.
+        db.createTeamThen(req, res, id, selfURL, team, function(etag) {
+          team.self = selfURL 
+          team._permissions = `scheme://authority/permissions?${team.self}`
+          lib.created(req, res, team, team.self, etag)
+        })
       })
     }
   }
