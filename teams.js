@@ -49,7 +49,7 @@ function createTeam(req, res, team) {
 }
 
 function makeSelfURL(req, key) {
-  return '//' + req.headers.host + TEAMS + key
+  return 'scheme://authority' + TEAMS + key
 }
 
 function getTeam(req, res, id) {
