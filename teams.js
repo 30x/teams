@@ -104,7 +104,7 @@ function getTeamsForUser(req, res, user) {
 function requestHandler(req, res) {
   if (req.url == '/teams') 
     if (req.method == 'POST') 
-      lib.getServerPostObject(req, res, createTeam)
+      lib.getServerPostObject(req, res, (t) => createTeam(req, res, t))
     else 
       lib.methodNotAllowed(req, res, ['POST'])
   else {
@@ -116,9 +116,7 @@ function requestHandler(req, res) {
       else if (req.method == 'DELETE') 
         deleteTeam(req, res, id)
       else if (req.method == 'PATCH') 
-        lib.getServerPostObject(req, res, function (req, res, jso) {
-          updateTeam(req, res, id, jso)
-        })
+        lib.getServerPostObject(req, res, (jso) => updateTeam(req, res, id, jso))
       else
         lib.methodNotAllowed(req, res, ['GET', 'DELETE', 'PATCH'])
     } else if (req_url.pathname == '/teams' && req_url.search !== null)
