@@ -67,7 +67,7 @@ function getTeam(req, res, id) {
 function deleteTeam(req, res, id) {
   pLib.ifAllowedThen(req, res, null, '_self', 'delete', function(err, reason) {
     db.deleteTeamThen(req, res, id, function (team, etag) {
-      lib.found(req, res, team, team.etag)
+      lib.found(req, res, team, etag)
     })
   })
 }
@@ -135,7 +135,7 @@ function start(){
   })
 }
 
- if (process.env.INTERNAL_SY_ROUTER_HOST == 'kubernetes_host_ip') 
+if (process.env.INTERNAL_SY_ROUTER_HOST == 'kubernetes_host_ip') 
   lib.getHostIPThen(function(err, hostIP){
     if (err) 
       process.exit(1)

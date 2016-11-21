@@ -18,7 +18,7 @@ function createTeamThen(req, id, selfURL, team, callback) {
   function eventData(pgResult) {
     return {id: selfURL, action: 'create', etag: pgResult.rows[0].etag, team: team}
   }
-  pge.queryAndStoreEvent(req, pool, query, 'teams', eventData, eventProducer, function(err, pgResult, pgEventResult) {
+  eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
     callback(err, pgResult.rows[0].etag)
   })
 }
@@ -57,7 +57,7 @@ function deleteTeamThen(req, id, callback) {
   function eventData(pgResult) {
     return {id: id, action: 'delete', etag: pgResult.rows[0].etag, team: pgResult.rows[0].data}
   }
-  pge.queryAndStoreEvent(req, pool, query, 'teams', eventData, eventProducer, function(err, pgResult, pgEventResult) {
+  eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
     callback(err, pgResult.rows[0].data, pgResult.rows[0].etag)
   })
 }
@@ -68,7 +68,7 @@ function updateTeamThen(req, id, team, patchedTeam, etag, callback) {
   function eventData(pgResult) {
     return {id: id, action: 'update', etag: pgResult.rows[0].etag, before: team, after: patchedTeam}
   }
-  pge.queryAndStoreEvent(req, pool, query, 'teams', eventData, eventProducer, function(err, pgResult, pgEventResult) {
+  eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
     callback(err, pgResult.rows[0].etag)
   })
 }
@@ -77,7 +77,7 @@ function init(callback) {
   var query = 'CREATE TABLE IF NOT EXISTS teams (id text primary key, etag int, data jsonb)'
   pool.query(query, function(err, pgResult) {
     if(err) {
-      console.error('error creating permissions table', err)
+      console.error('error creating teams table', err)
     } else {
       console.log(`connected to PG at ${config.host}`)
       eventProducer.init(callback)
