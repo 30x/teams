@@ -40,7 +40,7 @@ function createTeam(req, res, team) {
         // If we do things the other way around, a team without matching permissions could cause problems.
         db.createTeamThen(req, res, id, selfURL, team, function(etag) {
           team.self = selfURL 
-          team._permissions = `scheme://authority/permissions?${team.self}`
+          addCalculatedProperties(team)
           lib.created(req, res, team, team.self, etag)
         })
       })
@@ -52,12 +52,16 @@ function makeSelfURL(req, key) {
   return 'scheme://authority' + TEAMS + key
 }
 
+function addCalculatedProperties(team) {
+  team._permissions = `scheme://authority/permissions?${team.self}`
+  team._permissionsHeirs = `scheme://authority/permissions-heirs?${team.self}`  
+}
+
 function getTeam(req, res, id) {
   pLib.ifAllowedThen(req, res, null, '_self', 'read', function(err, reason) {
     db.withTeamDo(req, res, id, function(team , etag) {
       team.self = makeSelfURL(req, id)
-      team._permissions = `scheme://authority/permissions?${team.self}`
-      team._permissionsHeirs = `scheme://authority/permissions-heirs?${team.self}`
+      addCalculatedProperties(team)
       lib.externalizeURLs(team, req.headers.host)
       lib.found(req, res, team, etag)
     })
