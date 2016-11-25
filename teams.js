@@ -7,7 +7,8 @@ const pLib = require('permissions-helper-functions')
 
 var TEAMS = '/teams/'
 
-function verifyTeam(req, team, user) {
+function verifyTeam(req, team) {
+  var user = lib.getUser(req.headers.authorization)
   var rslt = lib.setStandardCreationProperties(req, team, user)
   if (team.isA == 'Team')
     if (Array.isArray(team.members))
@@ -19,11 +20,8 @@ function verifyTeam(req, team, user) {
 }
 
 function createTeam(req, res, team) {
-  var user = lib.getUser(req.headers.authorization)
-  if (user == null)
-    lib.unauthorized(req, res)
-  else { 
-    var err = verifyTeam(req, team, user)
+  pLib.ifAllowedThen(req, res, '/', 'teams', 'create', function() {
+    var err = verifyTeam(req, team)
     if (err !== null) 
       lib.badRequest(res, err)
     else {
@@ -45,7 +43,7 @@ function createTeam(req, res, team) {
         })
       })
     }
-  }
+  })
 }
 
 function makeSelfURL(req, key) {

@@ -76,9 +76,9 @@ function updateTeamThen(req, id, team, patchedTeam, etag, callback) {
 function init(callback) {
   var query = 'CREATE TABLE IF NOT EXISTS teams (id text primary key, etag int, data jsonb)'
   pool.query(query, function(err, pgResult) {
-    if(err) {
+    if(err)
       console.error('error creating teams table', err)
-    } else {
+    else {
       console.log(`connected to PG at ${config.host}`)
       eventProducer.init(callback)
     }
