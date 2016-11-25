@@ -27,9 +27,9 @@ function createTeam(req, res, team) {
     else {
       var id = lib.uuid4()
       var selfURL = makeSelfURL(req, id)
-      var permissions = team.permissions
+      var permissions = team._permissions
       if (permissions !== undefined) {
-        delete team.permissions; // interesting unusual case where ; is necessary
+        delete team._permissions; // interesting unusual case where ; is necessary
         (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
       }
       pLib.createPermissionsThen(req, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
