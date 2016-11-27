@@ -79,8 +79,9 @@ function updateTeam(req, res, id, patch) {
     db.withTeamDo(req, res, id, function(team , etag) {
       lib.applyPatch(req, res, team, patch, function(patchedTeam) {
         db.updateTeamThen(req, res, id, team, patchedTeam, etag, function (etag) {
-          patchedPermissions.self = selfURL(id, req) 
-          lib.found(req, res, team, etag)
+          patchedTeam.self = makeSelfURL(req, id) 
+          addCalculatedProperties(patchedTeam)
+          lib.found(req, res, patchedTeam, etag)
         })
       })
     })

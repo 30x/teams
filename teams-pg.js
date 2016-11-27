@@ -58,18 +58,24 @@ function deleteTeamThen(req, id, callback) {
     return {id: id, action: 'delete', etag: pgResult.rows[0].etag, team: pgResult.rows[0].data}
   }
   eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
-    callback(err, pgResult.rows[0].data, pgResult.rows[0].etag)
+    if (err)
+      callback(err)
+    else
+      callback(err, pgResult.rows[0].data, pgResult.rows[0].etag)
   })
 }
 
 function updateTeamThen(req, id, team, patchedTeam, etag, callback) {
   var key = lib.internalizeURL(id, req.headers.host)
-  var query = `UPDATE teams SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(patchedTeam)}') WHERE subject = '${key}' AND etag = ${etag} RETURNING etag`
+  var query = `UPDATE teams SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = ${etag} RETURNING etag`
   function eventData(pgResult) {
     return {id: id, action: 'update', etag: pgResult.rows[0].etag, before: team, after: patchedTeam}
   }
   eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
-    callback(err, pgResult.rows[0].etag)
+    if (err)
+      callback(err)
+    else
+      callback(err, pgResult.rows[0].etag)
   })
 }
 
