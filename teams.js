@@ -51,8 +51,9 @@ function makeSelfURL(req, key) {
 }
 
 function addCalculatedProperties(team) {
-  team._permissions = `scheme://authority/permissions?${team.self}`
-  team._permissionsHeirs = `scheme://authority/permissions-heirs?${team.self}`  
+  var externalSelf = lib.externalizeURLs(team.self)
+  team._permissions = `scheme://authority/permissions?${externalSelf}`
+  team._permissionsHeirs = `scheme://authority/permissions-heirs?${externalSelf}`  
 }
 
 function getTeam(req, res, id) {
