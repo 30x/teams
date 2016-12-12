@@ -1,2 +1,2 @@
 docker build -t teams .
-docker tag -f teams thirtyx/teams:0.0.24
+docker tag teams thirtyx/teams:0.0.24
