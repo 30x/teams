@@ -70,6 +70,7 @@ function getTeam(req, res, id) {
 function deleteTeam(req, res, id) {
   pLib.ifAllowedThen(req, res, null, '_self', 'delete', function(err, reason) {
     db.deleteTeamThen(req, res, id, function (team, etag) {
+      addCalculatedProperties(team)
       lib.found(req, res, team, etag)
     })
   })
@@ -113,7 +114,7 @@ function requestHandler(req, res) {
       lib.methodNotAllowed(req, res, ['POST'])
   else {
     var req_url = url.parse(req.url)
-    if (req_url.pathname.lastIndexOf(TEAMS, 0) > -1) {
+    if (req_url.pathname.startsWith(TEAMS)) {
       var id = req_url.pathname.substring(TEAMS.length)
       if (req.method == 'GET')
         getTeam(req, res, id)
