@@ -70,6 +70,13 @@ function getTeam(req, res, id) {
 function deleteTeam(req, res, id) {
   pLib.ifAllowedThen(req, res, null, '_self', 'delete', function(err, reason) {
     db.deleteTeamThen(req, res, id, function (team, etag) {
+      lib.sendInternalRequestThen(req, res, `/permissions?${TEAMS}${id}`, 'DELETE', undefined, function (clientRes) {
+        lib.getClientResponseBody(clientRes, function(body) {
+          var statusCode = clientRes.statusCode
+          if (statusCode !== 200)
+            console.log(`unable to delete permissions for ${TEAMS}${id}`)
+        })
+      })
       addCalculatedProperties(team)
       lib.found(req, res, team, etag)
     })
