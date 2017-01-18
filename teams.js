@@ -29,7 +29,7 @@ function createTeam(req, res, team) {
       var selfURL = makeSelfURL(req, id)
       var permissions = team._permissions
       if (permissions !== undefined) {
-        delete team._permissions; // interesting unusual case where ; is necessary
+        delete team._permissions; // unusual case where ; is necessary
         (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
       }
       pLib.createPermissionsThen(req, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
@@ -69,7 +69,7 @@ function getTeam(req, res, id) {
 
 function deleteTeam(req, res, id) {
   pLib.ifAllowedThen(req, res, null, '_self', 'delete', function(err, reason) {
-    db.deleteTeamThen(req, res, id, function (team, etag) {
+    db.deleteTeamThen(req, res, id, makeSelfURL(req, id), function (team, etag) {
       lib.sendInternalRequestThen(req, res, `/permissions?${TEAMS}${id}`, 'DELETE', undefined, function (clientRes) {
         lib.getClientResponseBody(clientRes, function(body) {
           var statusCode = clientRes.statusCode
@@ -87,7 +87,7 @@ function updateTeam(req, res, id, patch) {
   pLib.ifAllowedThen(req, res, null, '_self', 'update', function() {
     db.withTeamDo(req, res, id, function(team , etag) {
       lib.applyPatch(req, res, team, patch, function(patchedTeam) {
-        db.updateTeamThen(req, res, id, team, patchedTeam, etag, function (etag) {
+        db.updateTeamThen(req, res, id, makeSelfURL(req, id), team, patchedTeam, etag, function (etag) {
           patchedTeam.self = makeSelfURL(req, id) 
           addCalculatedProperties(patchedTeam)
           lib.found(req, res, patchedTeam, etag)

@@ -26,12 +26,12 @@ function withTeamsForUserDo(req, res, user, callback) {
   db.withTeamsForUserDo(req, user, withErrorHandling(req, res, callback))
 }
     
-function deleteTeamThen(req, res, id, callback) {
-  db.deleteTeamThen(req, id, withErrorHandling(req, res, callback))
+function deleteTeamThen(req, res, id, selfURL, callback) {
+  db.deleteTeamThen(req, id, selfURL, withErrorHandling(req, res, callback))
 }
 
-function updateTeamThen(req, res, id, team, patchedTeam, etag, callback) {
-  db.updateTeamThen(req, id, team, patchedTeam, etag, withErrorHandling(req, res, callback))
+function updateTeamThen(req, res, id, selfURL, team, patchedTeam, etag, callback) {
+  db.updateTeamThen(req, id, selfURL, team, patchedTeam, etag, withErrorHandling(req, res, callback))
 }
 
 function init(callback) {

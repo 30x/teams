@@ -16,7 +16,7 @@ var eventProducer = new pge.eventProducer(pool)
 function createTeamThen(req, id, selfURL, team, callback) {
   var query = `INSERT INTO teams (id, etag, data) values('${id}', 1, '${JSON.stringify(team)}') RETURNING etag`
   function eventData(pgResult) {
-    return {id: selfURL, action: 'create', etag: pgResult.rows[0].etag, team: team}
+    return {url: selfURL, action: 'create', etag: pgResult.rows[0].etag, team: team}
   }
   eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
     callback(err, pgResult.rows[0].etag)
@@ -52,10 +52,10 @@ function withTeamsForUserDo(req, user, callback) {
   })
 }
     
-function deleteTeamThen(req, id, callback) {
+function deleteTeamThen(req, id, selfURL, callback) {
   var query = `DELETE FROM teams WHERE id = '${id}' RETURNING *`
   function eventData(pgResult) {
-    return {id: id, action: 'delete', etag: pgResult.rows[0].etag, team: pgResult.rows[0].data}
+    return {url: TEAMS + id, action: 'delete', etag: pgResult.rows[0].etag, team: pgResult.rows[0].data}
   }
   eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
     if (err)
@@ -65,11 +65,11 @@ function deleteTeamThen(req, id, callback) {
   })
 }
 
-function updateTeamThen(req, id, team, patchedTeam, etag, callback) {
+function updateTeamThen(req, id, selfURL, team, patchedTeam, etag, callback) {
   var key = lib.internalizeURL(id, req.headers.host)
   var query = `UPDATE teams SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = ${etag} RETURNING etag`
   function eventData(pgResult) {
-    return {id: id, action: 'update', etag: pgResult.rows[0].etag, before: team, after: patchedTeam}
+    return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, before: team, after: patchedTeam}
   }
   eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
     if (err)
