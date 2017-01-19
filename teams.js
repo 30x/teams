@@ -7,42 +7,64 @@ const pLib = require('permissions-helper-functions')
 
 var TEAMS = '/teams/'
 
-function verifyTeam(req, team) {
+function verifyBases(req, res, team, callback) {
+  var bases = Object.keys(team.role)
+  if (bases.length > 0) {
+    var count = 0
+    var notAllowed = []
+    for (let i=0; i<bases.length; i++) {
+      pLib.withAllowedDo(req, res, bases[i], '_permissions', 'update', function(allowed) {
+        if (!allowed) 
+          notAllowed.push(bases[i])
+        if (++count == bases.length) {
+          callback(notAllowed.length == 0 ? null : `user ${lib.getUser(req.headers.authorization)} does not have the right to administer the permissions of the following base resources: ${notAllowed}`)            
+        }
+      })
+    }
+  } else
+    calback(null)
+}
+
+function verifyTeam(req, res, team, callback) {
   var user = lib.getUser(req.headers.authorization)
   var rslt = lib.setStandardCreationProperties(req, team, user)
   if (team.isA == 'Team')
     if (Array.isArray(team.members))
-      return null
+      if (team.role !== undefined) 
+        verifyBases(req, res, team, callback)
+      else
+        callback(null)
     else
-      return 'team must have an array of members'
+      callback('team must have an array of members')
   else
-    return 'invalid JSON: "isA" property not set to "Team" ' + JSON.stringify(team)
+    calback('invalid JSON: "isA" property not set to "Team" ' + JSON.stringify(team))
 }
 
 function createTeam(req, res, team) {
   pLib.ifAllowedThen(req, res, '/', 'teams', 'create', function() {
-    var err = verifyTeam(req, team)
-    if (err !== null) 
-      lib.badRequest(res, err)
-    else {
-      var id = lib.uuid4()
-      var selfURL = makeSelfURL(req, id)
-      var permissions = team._permissions
-      if (permissions !== undefined) {
-        delete team._permissions; // unusual case where ; is necessary
-        (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
-      }
-      pLib.createPermissionsThen(req, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
-        // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
-        // there will be a useless but harmless permissions document.
-        // If we do things the other way around, a team without matching permissions could cause problems.
-        db.createTeamThen(req, res, id, selfURL, team, function(etag) {
-          team.self = selfURL 
-          addCalculatedProperties(team)
-          lib.created(req, res, team, team.self, etag)
+    verifyTeam(req, res, team, function(err) { 
+      if (err !== null) 
+        lib.badRequest(res, err)
+      else {
+        var id = lib.uuid4()
+        var selfURL = makeSelfURL(req, id)
+        var permissions = team._permissions
+        if (permissions !== undefined) {
+          delete team._permissions; // unusual case where ; is necessary
+          (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
+        }
+        pLib.createPermissionsThen(req, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
+          // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
+          // there will be a useless but harmless permissions document.
+          // If we do things the other way around, a team without matching permissions could cause problems.
+          db.createTeamThen(req, res, id, selfURL, team, function(etag) {
+            team.self = selfURL 
+            addCalculatedProperties(team)
+            lib.created(req, res, team, team.self, etag)
+          })
         })
-      })
-    }
+      }
+    })
   })
 }
 
@@ -87,10 +109,15 @@ function updateTeam(req, res, id, patch) {
   pLib.ifAllowedThen(req, res, null, '_self', 'update', function() {
     db.withTeamDo(req, res, id, function(team , etag) {
       lib.applyPatch(req, res, team, patch, function(patchedTeam) {
-        db.updateTeamThen(req, res, id, makeSelfURL(req, id), team, patchedTeam, etag, function (etag) {
-          patchedTeam.self = makeSelfURL(req, id) 
-          addCalculatedProperties(patchedTeam)
-          lib.found(req, res, patchedTeam, etag)
+        verifyTeam(req, res, patchedTeam, function(err) {
+          if (err)
+            lib.badRequest(res, err)
+          else
+            db.updateTeamThen(req, res, id, makeSelfURL(req, id), team, patchedTeam, etag, function (etag) {
+              patchedTeam.self = makeSelfURL(req, id) 
+              addCalculatedProperties(patchedTeam)
+              lib.found(req, res, patchedTeam, etag)
+            })
         })
       })
     })
