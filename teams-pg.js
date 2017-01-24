@@ -41,8 +41,9 @@ function withTeamDo(req, id, callback) {
 }
 
 function withTeamsForUserDo(req, user, callback) {
-  var query = "SELECT id FROM teams, jsonb_array_elements(teams.data->'members') AS member WHERE member = $1"
-  pool.query(query, [JSON.stringify(user)], function (err, pg_res) {
+  //var query = "SELECT id FROM teams, jsonb_array_elements(teams.data->'members') AS member WHERE member = $1"
+  var query = `SELECT id FROM teams WHERE data->'members' ? '${user}'`
+  pool.query(query, function (err, pg_res) {
     if (err) {
       callback(err)
     }
@@ -81,14 +82,30 @@ function updateTeamThen(req, id, selfURL, team, patchedTeam, etag, callback) {
 
 function init(callback) {
   var query = 'CREATE TABLE IF NOT EXISTS teams (id text primary key, etag int, data jsonb)'
-  pool.query(query, function(err, pgResult) {
+  pool.connect(function(err, client, release) {
     if(err)
       console.error('error creating teams table', err)
-    else {
-      console.log(`connected to PG at ${config.host}`)
-      eventProducer.init(callback)
-    }
+    else
+      client.query(query, function(err, pgResult) {
+        if(err) {
+          release()
+          console.error('error creating teams table', err)
+        } else {
+          query = "CREATE INDEX IF NOT EXISTS inxmembers ON teams USING gin ((data->'members'));"
+          client.query(query, function(err, pgResult) {
+            if(err) {
+              release()
+              console.error('error creating inmembers index on teams', err)
+            } else {
+              release()
+              console.log('teams-pg: connected to PG, config: ', config)
+              eventProducer.init(callback)
+            }
+          })
+        }
+      })
   })    
+   
 }
 
 process.on('unhandledRejection', function(e) {
