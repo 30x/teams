@@ -3,6 +3,8 @@ var Pool = require('pg').Pool
 var lib = require('http-helper-functions')
 var pge = require('pg-event-producer')
 
+var TEAMS = '/teams/'
+
 var config = {
   host: process.env.PG_HOST,
   user: process.env.PG_USER,
