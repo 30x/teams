@@ -34,6 +34,10 @@ function updateTeamThen(req, res, id, selfURL, team, patchedTeam, etag, callback
   db.updateTeamThen(req, id, selfURL, team, patchedTeam, etag, withErrorHandling(req, res, callback))
 }
 
+function putTeamThen(req, res, id, selfURL, team, callback) {
+  db.putTeamThen(req, id, selfURL, team, withErrorHandling(req, res, callback))
+}
+
 function init(callback) {
   db.init(callback)
 }

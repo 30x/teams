@@ -82,6 +82,20 @@ function updateTeamThen(req, id, selfURL, team, patchedTeam, etag, callback) {
   })
 }
 
+function putTeamThen(req, id, selfURL, team, callback) {
+  var key = lib.internalizeURL(id, req.headers.host)
+  var query = `UPDATE teams SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = ${etag} RETURNING etag`
+  function eventData(pgResult) {
+    return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, before: team, after: patchedTeam}
+  }
+  eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
+    if (err)
+      callback(err)
+    else
+      callback(err, pgResult.rows[0].etag)
+  })
+}
+
 function init(callback) {
   var query = 'CREATE TABLE IF NOT EXISTS teams (id text primary key, etag int, data jsonb)'
   pool.connect(function(err, client, release) {

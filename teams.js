@@ -124,6 +124,21 @@ function updateTeam(req, res, id, patch) {
   })
 }
 
+function putTeam(req, res, id, team) {
+  pLib.ifAllowedThen(req, res, null, '_self', 'put', function() {
+    verifyTeam(req, res, team, function(err) {
+      if (err)
+        lib.badRequest(res, err)
+      else
+        db.putTeamThen(req, res, id, makeSelfURL(req, id), team, function (etag) {
+          newTeam.self = makeSelfURL(req, id) 
+          addCalculatedProperties(team)
+          lib.found(req, res, newTeam, etag)
+        })
+    })
+  })
+}
+
 function getTeamsForUser(req, res, user) {
   var requestingUser = lib.getUser(req.headers.authorization)
   user = lib.internalizeURL(user, req.headers.host)
@@ -156,8 +171,10 @@ function requestHandler(req, res) {
         deleteTeam(req, res, id)
       else if (req.method == 'PATCH') 
         lib.getServerPostObject(req, res, (jso) => updateTeam(req, res, id, jso))
+      else if (req.method == 'PUT') 
+        lib.getServerPostObject(req, res, (jso) => putTeam(req, res, id, jso))
       else
-        lib.methodNotAllowed(req, res, ['GET', 'DELETE', 'PATCH'])
+        lib.methodNotAllowed(req, res, ['GET', 'DELETE', 'PATCH', 'PUT'])
     } else if (req_url.pathname == '/teams' && req_url.search !== null)
       getTeamsForUser(req, res, req_url.search.substring(1))
     else
