@@ -30,8 +30,8 @@ function deleteTeamThen(req, res, id, selfURL, callback) {
   db.deleteTeamThen(req, id, selfURL, withErrorHandling(req, res, callback))
 }
 
-function updateTeamThen(req, res, id, selfURL, team, patchedTeam, etag, callback) {
-  db.updateTeamThen(req, id, selfURL, team, patchedTeam, etag, withErrorHandling(req, res, callback))
+function updateTeamThen(req, res, id, selfURL, patchedTeam, etag, callback) {
+  db.updateTeamThen(req, id, selfURL, patchedTeam, etag, withErrorHandling(req, res, callback))
 }
 
 function putTeamThen(req, res, id, selfURL, team, callback) {

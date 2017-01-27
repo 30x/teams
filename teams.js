@@ -108,18 +108,24 @@ function deleteTeam(req, res, id) {
 function updateTeam(req, res, id, patch) {
   pLib.ifAllowedThen(req, res, null, '_self', 'update', function() {
     db.withTeamDo(req, res, id, function(team , etag) {
-      lib.applyPatch(req, res, team, patch, function(patchedTeam) {
-        verifyTeam(req, res, patchedTeam, function(err) {
-          if (err)
-            lib.badRequest(res, err)
-          else
-            db.updateTeamThen(req, res, id, makeSelfURL(req, id), team, patchedTeam, etag, function (etag) {
-              patchedTeam.self = makeSelfURL(req, id) 
-              addCalculatedProperties(patchedTeam)
-              lib.found(req, res, patchedTeam, etag)
-            })
+      if (req.headers['if-match'] == etag) { 
+        lib.applyPatch(req, res, team, patch, function(patchedTeam) {
+          verifyTeam(req, res, patchedTeam, function(err) {
+            if (err)
+              lib.badRequest(res, err)
+            else
+              db.updateTeamThen(req, res, id, makeSelfURL(req, id), patchedTeam, etag, function (etag) {
+                console.log('patched etag', etag)
+                patchedTeam.self = makeSelfURL(req, id) 
+                addCalculatedProperties(patchedTeam)
+                lib.found(req, res, patchedTeam, etag)
+              })
+          })
         })
-      })
+      } else {
+        var err = (req.headers['if-match'] === undefined) ? 'missing If-Match header' : 'If-Match header does not match etag ' + req.headers['If-Match'] + ' ' + etag
+        lib.badRequest(res, err)
+      }      
     })
   })
 }

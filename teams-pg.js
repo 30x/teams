@@ -68,11 +68,11 @@ function deleteTeamThen(req, id, selfURL, callback) {
   })
 }
 
-function updateTeamThen(req, id, selfURL, team, patchedTeam, etag, callback) {
+function updateTeamThen(req, id, selfURL, patchedTeam, etag, callback) {
   var key = lib.internalizeURL(id, req.headers.host)
   var query = `UPDATE teams SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = ${etag} RETURNING etag`
   function eventData(pgResult) {
-    return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, before: team, after: patchedTeam}
+    return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, after: patchedTeam}
   }
   eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
     if (err)
