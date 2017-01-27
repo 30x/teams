@@ -16,7 +16,7 @@ var pool = new Pool(config)
 var eventProducer = new pge.eventProducer(pool)
 
 function createTeamThen(req, id, selfURL, team, callback) {
-  var query = `INSERT INTO teams (id, etag, data) values('${id}', 1, '${JSON.stringify(team)}') RETURNING etag`
+  var query = `INSERT INTO teams (id, etag, data) values('${id}', '${lib.uuid4()}', '${JSON.stringify(team)}') RETURNING etag`
   function eventData(pgResult) {
     return {url: selfURL, action: 'create', etag: pgResult.rows[0].etag, team: team}
   }
@@ -70,7 +70,7 @@ function deleteTeamThen(req, id, selfURL, callback) {
 
 function updateTeamThen(req, id, selfURL, patchedTeam, etag, callback) {
   var key = lib.internalizeURL(id, req.headers.host)
-  var query = `UPDATE teams SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = ${etag} RETURNING etag`
+  var query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = '${etag}' RETURNING etag`
   function eventData(pgResult) {
     return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, after: patchedTeam}
   }
@@ -84,7 +84,7 @@ function updateTeamThen(req, id, selfURL, patchedTeam, etag, callback) {
 
 function putTeamThen(req, id, selfURL, team, callback) {
   var key = lib.internalizeURL(id, req.headers.host)
-  var query = `UPDATE teams SET (etag, data) = (${(etag+1) % 2147483647}, '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = ${etag} RETURNING etag`
+  var query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = '${etag}' RETURNING etag`
   function eventData(pgResult) {
     return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, before: team, after: patchedTeam}
   }
@@ -97,7 +97,7 @@ function putTeamThen(req, id, selfURL, team, callback) {
 }
 
 function init(callback) {
-  var query = 'CREATE TABLE IF NOT EXISTS teams (id text primary key, etag int, data jsonb)'
+  var query = 'CREATE TABLE IF NOT EXISTS teams (id text primary key, etag text, data jsonb)'
   pool.connect(function(err, client, release) {
     if(err)
       console.error('error creating teams table', err)
