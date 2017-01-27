@@ -136,7 +136,7 @@ function putTeam(req, res, id, team) {
       if (err)
         lib.badRequest(res, err)
       else
-        db.putTeamThen(req, res, id, makeSelfURL(req, id), team, function (etag) {
+        db.updateTeamThen(req, res, id, makeSelfURL(req, id), team, function (etag) {
           newTeam.self = makeSelfURL(req, id) 
           addCalculatedProperties(team)
           lib.found(req, res, newTeam, etag)
