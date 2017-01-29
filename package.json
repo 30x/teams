@@ -5,7 +5,7 @@
   "main": "teams.js",
   "dependencies": {
     "http-helper-functions": "^0.0.77",
-    "permissions-helper-functions": "0.0.30",
+    "permissions-helper-functions": "0.0.33",
     "pg": "^6.0.3",
     "pg-event-producer": "^0.0.36"
   },
