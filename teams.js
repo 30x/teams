@@ -17,7 +17,7 @@ function verifyBases(req, res, team, callback) {
     var paths = Object.keys(base)
     pathCount += path.length
     for (let j=0; j< paths.length; j++)
-      pLib.withAllowedDo(req, res, base, '_permissions', 'update', base, paths[j], function(allowed) {
+      pLib.withAllowedDo(req, res, base, '_self', 'govern', base, paths[j], function(allowed) {
         if (!allowed) 
           notAllowed.push(bases[i])
         if (++count == pathCount)
