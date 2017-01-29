@@ -9,19 +9,22 @@ var TEAMS = '/teams/'
 
 function verifyBases(req, res, team, callback) {
   var bases = Object.keys(team.role)
-  if (bases.length > 0) {
-    var count = 0
-    var notAllowed = []
-    for (let i=0; i<bases.length; i++) {
-      pLib.withAllowedDo(req, res, bases[i], '_permissions', 'update', function(allowed) {
+  var pathCount
+  var count = 0
+  var notAllowed = []
+  for (let i=0; i<bases.length; i++) {
+    var base = bases[i]
+    var paths = Object.keys(base)
+    pathCount += path.length
+    for (let j=0; j< paths.length; j++)
+      pLib.withAllowedDo(req, res, base, '_permissions', 'update', base, paths[j], function(allowed) {
         if (!allowed) 
           notAllowed.push(bases[i])
-        if (++count == bases.length) {
+        if (++count == pathCount)
           callback(notAllowed.length == 0 ? null : `user ${lib.getUser(req.headers.authorization)} does not have the right to administer the permissions of the following base resources: ${notAllowed}`)            
-        }
       })
-    }
-  } else
+  }
+  if (pathCount == 0)
     calback(null)
 }
 
