@@ -70,7 +70,12 @@ function deleteTeamThen(req, id, selfURL, callback) {
 
 function updateTeamThen(req, id, selfURL, patchedTeam, etag, callback) {
   var key = lib.internalizeURL(id, req.headers.host)
-  var query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = '${etag}' RETURNING etag`
+  var query
+  if (etag) 
+    query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = '${etag}' RETURNING etag`
+  else
+    query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' RETURNING etag`
+  
   function eventData(pgResult) {
     return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, after: patchedTeam}
   }
@@ -78,7 +83,10 @@ function updateTeamThen(req, id, selfURL, patchedTeam, etag, callback) {
     if (err)
       callback(err)
     else
-      callback(err, pgResult.rows[0].etag)
+      if (pgResult.rowCount == 0)
+        callback(404)
+      else
+        callback(err, pgResult.rows[0].etag)
   })
 }
 
