@@ -6,7 +6,7 @@ const db = require('./teams-db.js')
 const pLib = require('permissions-helper-functions')
 const rLib = require('response-helper-functions')
 
-var TEAMS = '/teams/'
+const TEAMS = '/teams/'
 
 function verifyBases(req, res, team, callback) {
   var bases = Object.keys(team.role)
@@ -73,13 +73,13 @@ function createTeam(req, res, team) {
 }
 
 function makeSelfURL(req, key) {
-  return TEAMS + key
+  return `${rLib.INTERNAL_URL_PREFIX}${TEAMS}${key}`
 }
 
 function addCalculatedProperties(team) {
   var externalSelf = lib.externalizeURLs(team.self)
-  team._permissions = `/permissions?${externalSelf}`
-  team._permissionsHeirs = `/permissions-heirs?${externalSelf}`  
+  team._permissions = `${rLib.INTERNAL_URL_PREFIX}/permissions?${externalSelf}`
+  team._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/permissions-heirs?${externalSelf}`  
 }
 
 function getTeam(req, res, id) {
