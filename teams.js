@@ -95,7 +95,7 @@ function getTeam(req, res, id) {
 function deleteTeam(req, res, id) {
   pLib.ifAllowedThen(req, res, null, '_self', 'delete', function(err, reason) {
     db.deleteTeamThen(req, res, id, makeSelfURL(req, id), function (team, etag) {
-      lib.sendInternalRequestThen(req, res, `/permissions?${TEAMS}${id}`, 'DELETE', undefined, function (clientRes) {
+      lib.sendInternalRequestThen(res, 'DELETE', `/permissions?${TEAMS}${id}`, lib.flowThroughHeaders(req), undefined, function (clientRes) {
         lib.getClientResponseBody(clientRes, function(body) {
           var statusCode = clientRes.statusCode
           if (statusCode !== 200)
