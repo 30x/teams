@@ -4,6 +4,7 @@ const url = require('url')
 const lib = require('http-helper-functions')
 const db = require('./teams-db.js')
 const pLib = require('permissions-helper-functions')
+const rLib = require('response-helper-functions')
 
 var TEAMS = '/teams/'
 
@@ -47,9 +48,9 @@ function createTeam(req, res, team) {
   pLib.ifAllowedThen(req, res, '/', 'teams', 'create', function() {
     verifyTeam(req, res, team, function(err) { 
       if (err !== null) 
-        lib.badRequest(res, err)
+        rLib.badRequest(res, err)
       else {
-        var id = lib.uuid4()
+        var id = rLib.uuid4()
         var selfURL = makeSelfURL(req, id)
         var permissions = team._permissions
         if (permissions !== undefined) {
@@ -63,7 +64,7 @@ function createTeam(req, res, team) {
           db.createTeamThen(req, res, id, selfURL, team, function(etag) {
             team.self = selfURL 
             addCalculatedProperties(team)
-            lib.created(req, res, team, team.self, etag)
+            rLib.created(res, team, req.headers.accept, team.self, etag)
           })
         })
       }
@@ -72,13 +73,13 @@ function createTeam(req, res, team) {
 }
 
 function makeSelfURL(req, key) {
-  return 'scheme://authority' + TEAMS + key
+  return TEAMS + key
 }
 
 function addCalculatedProperties(team) {
   var externalSelf = lib.externalizeURLs(team.self)
-  team._permissions = `scheme://authority/permissions?${externalSelf}`
-  team._permissionsHeirs = `scheme://authority/permissions-heirs?${externalSelf}`  
+  team._permissions = `/permissions?${externalSelf}`
+  team._permissionsHeirs = `/permissions-heirs?${externalSelf}`  
 }
 
 function getTeam(req, res, id) {
@@ -86,8 +87,7 @@ function getTeam(req, res, id) {
     db.withTeamDo(req, res, id, function(team , etag) {
       team.self = makeSelfURL(req, id)
       addCalculatedProperties(team)
-      lib.externalizeURLs(team, req.headers.host)
-      lib.found(req, res, team, etag)
+      rLib.found(res, team, req.headers.accept, team.self, etag)
     })
   })
 }
@@ -102,8 +102,9 @@ function deleteTeam(req, res, id) {
             console.log(`unable to delete permissions for ${TEAMS}${id}`)
         })
       })
+      team.self = makeSelfURL(req, id)
       addCalculatedProperties(team)
-      lib.found(req, res, team, etag)
+      rLib.found(res, team, req.headers.accept, team.self, etag)
     })
   })
 }
@@ -115,19 +116,19 @@ function updateTeam(req, res, id, patch) {
         lib.applyPatch(req, res, team, patch, function(patchedTeam) {
           verifyTeam(req, res, patchedTeam, function(err) {
             if (err)
-              lib.badRequest(res, err)
+              rLib.badRequest(res, err)
             else
               db.updateTeamThen(req, res, id, makeSelfURL(req, id), patchedTeam, etag, function (etag) {
                 console.log('patched etag', etag)
                 patchedTeam.self = makeSelfURL(req, id) 
                 addCalculatedProperties(patchedTeam)
-                lib.found(req, res, patchedTeam, etag)
+                rLib.found(res, patchedTeam, req.headers.accept, patchedTeam.self, etag)
               })
           })
         })
       } else {
         var err = (req.headers['if-match'] === undefined) ? 'missing If-Match header' : 'If-Match header does not match etag ' + req.headers['If-Match'] + ' ' + etag
-        lib.badRequest(res, err)
+        rLib.badRequest(res, err)
       }      
     })
   })
@@ -137,12 +138,12 @@ function putTeam(req, res, id, team) {
   pLib.ifAllowedThen(req, res, null, '_self', 'put', function() {
     verifyTeam(req, res, team, function(err) {
       if (err)
-        lib.badRequest(res, err)
+        rLib.badRequest(res, err)
       else
         db.updateTeamThen(req, res, id, makeSelfURL(req, id), team, null, function (etag) {
           team.self = makeSelfURL(req, id) 
           addCalculatedProperties(team)
-          lib.found(req, res, team, etag)
+          rLib.found(res, team, req.headers.accept, team.self, etag)
         })
     })
   })
@@ -154,14 +155,13 @@ function getTeamsForUser(req, res, user) {
   if (user == requestingUser) {
     db.withTeamsForUserDo(req, res, user, function (teamIDs) {
       var rslt = {
-        self: `scheme://authority${req.url}`,
+        self: req.url,
         contents: teamIDs.map(id => `//${req.headers.host}${TEAMS}${id}`)
       }
-      lib.externalizeURLs(rslt)
-      lib.found(req, res, rslt)
+      rLib.found(res, rslt, req.headers.accept, rslt.self)
     })
   } else
-    lib.forbidden(req, res)
+    rLib.forbidden(res)
 }
 
 function requestHandler(req, res) {
@@ -169,7 +169,7 @@ function requestHandler(req, res) {
     if (req.method == 'POST') 
       lib.getServerPostObject(req, res, (t) => createTeam(req, res, t))
     else 
-      lib.methodNotAllowed(req, res, ['POST'])
+      rLib.methodNotAllowed(res, ['POST'])
   else {
     var req_url = url.parse(req.url)
     if (req_url.pathname.startsWith(TEAMS)) {
@@ -183,11 +183,11 @@ function requestHandler(req, res) {
       else if (req.method == 'PUT') 
         lib.getServerPostObject(req, res, (jso) => putTeam(req, res, id, jso))
       else
-        lib.methodNotAllowed(req, res, ['GET', 'DELETE', 'PATCH', 'PUT'])
+        rLib.methodNotAllowed(res, ['GET', 'DELETE', 'PATCH', 'PUT'])
     } else if (req_url.pathname == '/teams' && req_url.search !== null)
       getTeamsForUser(req, res, req_url.search.substring(1))
     else
-      lib.notFound(req, res)
+      rLib.notFound(res, `//${req.headers.host}${req.url} not found`)
   }
 }
 

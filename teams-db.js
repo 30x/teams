@@ -1,14 +1,14 @@
 'use strict'
-var Pool = require('pg').Pool
-var lib = require('http-helper-functions')
+const Pool = require('pg').Pool
+const rLib = require('response-helper-functions')
 const db = require('./teams-pg.js')
 
 function withErrorHandling(req, res, callback) {
   return function (err) {
     if (err == 404) 
-      lib.notFound(req, res)
+      rLib.notFound(res, `//${req.headers.host}${req.url} not found`)
     else if (err)
-      lib.internalError(res, err)
+      rLib.internalError(res, err)
     else 
       callback.apply(this, Array.prototype.slice.call(arguments, 1))
   }
