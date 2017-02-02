@@ -116,7 +116,6 @@ function updateTeam(req, res, id, patch) {
               rLib.badRequest(res, err)
             else
               db.updateTeamThen(req, res, id, makeSelfURL(req, id), patchedTeam, etag, function (etag) {
-                console.log('patched etag', etag)
                 patchedTeam.self = selfURL 
                 addCalculatedProperties(patchedTeam)
                 rLib.found(res, patchedTeam, req.headers.accept, patchedTeam.self, etag)
