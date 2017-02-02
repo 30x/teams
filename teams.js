@@ -18,7 +18,7 @@ function verifyBases(req, res, team, callback) {
     var paths = Object.keys(base)
     pathCount += path.length
     for (let j=0; j< paths.length; j++)
-      pLib.withAllowedDo(req, res, base, '_self', 'govern', base, paths[j], function(allowed) {
+      pLib.withAllowedDo(lib.flowThroughHeaders(req), res, base, '_self', 'govern', base, paths[j], function(allowed) {
         if (!allowed) 
           notAllowed.push(bases[i])
         if (++count == pathCount)
@@ -45,7 +45,7 @@ function verifyTeam(req, res, team, callback) {
 }
 
 function createTeam(req, res, team) {
-  pLib.ifAllowedThen(req, res, '/', 'teams', 'create', function() {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, '/', 'teams', 'create', function() {
     verifyTeam(req, res, team, function(err) { 
       if (err !== null) 
         rLib.badRequest(res, err)
@@ -83,7 +83,7 @@ function addCalculatedProperties(team) {
 }
 
 function getTeam(req, res, id) {
-  pLib.ifAllowedThen(req, res, null, '_self', 'read', function(err, reason) {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'read', function(err, reason) {
     db.withTeamDo(req, res, id, function(team , etag) {
       team.self = makeSelfURL(req, id)
       addCalculatedProperties(team)
@@ -93,7 +93,7 @@ function getTeam(req, res, id) {
 }
 
 function deleteTeam(req, res, id) {
-  pLib.ifAllowedThen(req, res, null, '_self', 'delete', function(err, reason) {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'delete', function(err, reason) {
     db.deleteTeamThen(req, res, id, makeSelfURL(req, id), function (team, etag) {
       lib.sendInternalRequestThen(res, 'DELETE', `/permissions?${TEAMS}${id}`, lib.flowThroughHeaders(req), undefined, function (clientRes) {
         lib.getClientResponseBody(clientRes, function(body) {
@@ -110,7 +110,8 @@ function deleteTeam(req, res, id) {
 }
 
 function updateTeam(req, res, id, patch) {
-  pLib.ifAllowedThen(req, res, null, '_self', 'update', function() {
+  var selfURL =  makeSelfURL(req, id) 
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'update', function() {
     db.withTeamDo(req, res, id, function(team , etag) {
       if (req.headers['if-match'] == etag) { 
         lib.applyPatch(req, res, team, patch, function(patchedTeam) {
@@ -120,7 +121,7 @@ function updateTeam(req, res, id, patch) {
             else
               db.updateTeamThen(req, res, id, makeSelfURL(req, id), patchedTeam, etag, function (etag) {
                 console.log('patched etag', etag)
-                patchedTeam.self = makeSelfURL(req, id) 
+                patchedTeam.self = selfURL 
                 addCalculatedProperties(patchedTeam)
                 rLib.found(res, patchedTeam, req.headers.accept, patchedTeam.self, etag)
               })
@@ -135,7 +136,7 @@ function updateTeam(req, res, id, patch) {
 }
 
 function putTeam(req, res, id, team) {
-  pLib.ifAllowedThen(req, res, null, '_self', 'put', function() {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'put', function() {
     verifyTeam(req, res, team, function(err) {
       if (err)
         rLib.badRequest(res, err)
