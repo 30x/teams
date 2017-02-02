@@ -57,7 +57,7 @@ function createTeam(req, res, team) {
           delete team._permissions; // unusual case where ; is necessary
           (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
         }
-        pLib.createPermissionsThen(req, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
+        pLib.createPermissionsThen(lib.flowThroughHeaders(req), res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
           // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
           // there will be a useless but harmless permissions document.
           // If we do things the other way around, a team without matching permissions could cause problems.
@@ -95,12 +95,8 @@ function getTeam(req, res, id) {
 function deleteTeam(req, res, id) {
   pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'delete', function(err, reason) {
     db.deleteTeamThen(req, res, id, makeSelfURL(req, id), function (team, etag) {
-      lib.sendInternalRequestThen(res, 'DELETE', `/permissions?${TEAMS}${id}`, lib.flowThroughHeaders(req), undefined, function (clientRes) {
-        lib.getClientResponseBody(clientRes, function(body) {
-          var statusCode = clientRes.statusCode
-          if (statusCode !== 200)
-            console.log(`unable to delete permissions for ${TEAMS}${id}`)
-        })
+      pLib.deletePermissionsThen(lib.flowThroughHeaders(req), res, `${TEAMS}${id}`, function () {
+        console.log(`deleted permissions for ${TEAMS}${id}`)
       })
       team.self = makeSelfURL(req, id)
       addCalculatedProperties(team)
