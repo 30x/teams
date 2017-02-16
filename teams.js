@@ -93,7 +93,7 @@ function getTeam(req, res, id) {
 }
 
 function deleteTeam(req, res, id) {
-  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'delete', function(err, reason) {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'delete', function() {
     db.deleteTeamThen(req, res, id, makeSelfURL(req, id), function (team, etag) {
       pLib.deletePermissionsThen(lib.flowThroughHeaders(req), res, `${TEAMS}${id}`, function () {
         console.log(`deleted permissions for ${TEAMS}${id}`)
@@ -107,7 +107,7 @@ function deleteTeam(req, res, id) {
 
 function updateTeam(req, res, id, patch) {
   var selfURL =  makeSelfURL(req, id) 
-  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'update', function() {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'update', function(allowed) {
     db.withTeamDo(req, res, id, function(team , etag) {
       if (req.headers['if-match'] == etag) { 
         lib.applyPatch(req, res, team, patch, function(patchedTeam) {
@@ -127,7 +127,7 @@ function updateTeam(req, res, id, patch) {
         rLib.badRequest(res, err)
       }      
     })
-  })
+  }, true)
 }
 
 function putTeam(req, res, id, team) {
