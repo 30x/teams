@@ -50,7 +50,7 @@ function createTeam(req, res, team) {
       if (err !== null) 
         rLib.badRequest(res, err)
       else {
-        var id = rLib.uuid4()
+        var id = rLib.uuidw()
         var selfURL = makeSelfURL(req, id)
         var permissions = team._permissions
         if (permissions !== undefined) {
