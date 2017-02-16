@@ -15,10 +15,11 @@ var config = {
 var pool = new Pool(config)
 var eventProducer = new pge.eventProducer(pool)
 
-function createTeamThen(req, id, selfURL, team, callback) {
+function createTeamThen(req, id, selfURL, team, scopes, callback) {
+  console.trace()
   var query = `INSERT INTO teams (id, etag, data) values('${id}', '${lib.uuid4()}', '${JSON.stringify(team)}') RETURNING etag`
   function eventData(pgResult) {
-    return {url: selfURL, action: 'create', etag: pgResult.rows[0].etag, team: team}
+    return {url: selfURL, action: 'create', etag: pgResult.rows[0].etag, team: team, scopes: scopes}
   }
   eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
     callback(err, pgResult.rows[0].etag)
@@ -55,10 +56,10 @@ function withTeamsForUserDo(req, user, callback) {
   })
 }
     
-function deleteTeamThen(req, id, selfURL, callback) {
+function deleteTeamThen(req, id, selfURL, scopes, callback) {
   var query = `DELETE FROM teams WHERE id = '${id}' RETURNING *`
   function eventData(pgResult) {
-    return {url: TEAMS + id, action: 'delete', etag: pgResult.rows[0].etag, team: pgResult.rows[0].data}
+    return {url: TEAMS + id, action: 'delete', etag: pgResult.rows[0].etag, team: pgResult.rows[0].data, scopes: scopes}
   }
   eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
     if (err)
@@ -68,16 +69,16 @@ function deleteTeamThen(req, id, selfURL, callback) {
   })
 }
 
-function updateTeamThen(req, id, selfURL, patchedTeam, etag, callback) {
+function updateTeamThen(req, id, selfURL, patchedTeam, scopes, etag, callback) {
   var key = lib.internalizeURL(id, req.headers.host)
   var query
   if (etag) 
     query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = '${etag}' RETURNING etag`
   else
     query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' RETURNING etag`
-  
+  console.log(query)
   function eventData(pgResult) {
-    return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, after: patchedTeam}
+    return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, after: patchedTeam, scopes, scopes}
   }
   eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
     if (err)

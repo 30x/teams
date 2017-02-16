@@ -61,7 +61,7 @@ function createTeam(req, res, team) {
           // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
           // there will be a useless but harmless permissions document.
           // If we do things the other way around, a team without matching permissions could cause problems.
-          db.createTeamThen(req, res, id, selfURL, team, function(etag) {
+          db.createTeamThen(req, res, id, selfURL, team, permissions.scopes, function(etag) {
             team.self = selfURL 
             addCalculatedProperties(team)
             rLib.created(res, team, req.headers.accept, team.self, etag)
@@ -115,7 +115,7 @@ function updateTeam(req, res, id, patch) {
             if (err)
               rLib.badRequest(res, err)
             else
-              db.updateTeamThen(req, res, id, makeSelfURL(req, id), patchedTeam, etag, function (etag) {
+              db.updateTeamThen(req, res, id, makeSelfURL(req, id), patchedTeam, allowed.scopes, etag, function (etag) {
                 patchedTeam.self = selfURL 
                 addCalculatedProperties(patchedTeam)
                 rLib.found(res, patchedTeam, req.headers.accept, patchedTeam.self, etag)
@@ -131,18 +131,18 @@ function updateTeam(req, res, id, patch) {
 }
 
 function putTeam(req, res, id, team) {
-  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'put', function() {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'put', function(allowed) {
     verifyTeam(req, res, team, function(err) {
       if (err)
         rLib.badRequest(res, err)
       else
-        db.updateTeamThen(req, res, id, makeSelfURL(req, id), team, null, function (etag) {
+        db.updateTeamThen(req, res, id, makeSelfURL(req, id), team, allowed.scopes, null, function (etag) {
           team.self = makeSelfURL(req, id) 
           addCalculatedProperties(team)
           rLib.found(res, team, req.headers.accept, team.self, etag)
         })
     })
-  })
+  }, true)
 }
 
 function getTeamsForUser(req, res, user) {

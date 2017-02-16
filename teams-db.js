@@ -14,8 +14,8 @@ function withErrorHandling(req, res, callback) {
   }
 }
 
-function createTeamThen(req, res, id, selfURL, team, callback) {
-  db.createTeamThen(req, id, selfURL, team, withErrorHandling(req, res, callback))
+function createTeamThen(req, res, id, selfURL, team, scopes, callback) {
+  db.createTeamThen(req, id, selfURL, team, scopes, withErrorHandling(req, res, callback))
 }
 
 function withTeamDo(req, res, id, callback) {
@@ -26,16 +26,12 @@ function withTeamsForUserDo(req, res, user, callback) {
   db.withTeamsForUserDo(req, user, withErrorHandling(req, res, callback))
 }
     
-function deleteTeamThen(req, res, id, selfURL, callback) {
-  db.deleteTeamThen(req, id, selfURL, withErrorHandling(req, res, callback))
+function deleteTeamThen(req, res, id, selfURL, scopes, callback) {
+  db.deleteTeamThen(req, id, selfURL, scopes, withErrorHandling(req, res, callback))
 }
 
-function updateTeamThen(req, res, id, selfURL, patchedTeam, etag, callback) {
-  db.updateTeamThen(req, id, selfURL, patchedTeam, etag, withErrorHandling(req, res, callback))
-}
-
-function putTeamThen(req, res, id, selfURL, team, callback) {
-  db.putTeamThen(req, id, selfURL, team, withErrorHandling(req, res, callback))
+function updateTeamThen(req, res, id, selfURL, patchedTeam, scopes, etag, callback) {
+  db.updateTeamThen(req, id, selfURL, patchedTeam, scopes, etag, withErrorHandling(req, res, callback))
 }
 
 function init(callback) {
