@@ -16,7 +16,6 @@ var pool = new Pool(config)
 var eventProducer = new pge.eventProducer(pool)
 
 function createTeamThen(req, id, selfURL, team, scopes, callback) {
-  console.trace()
   var query = `INSERT INTO teams (id, etag, data) values('${id}', '${lib.uuid4()}', '${JSON.stringify(team)}') RETURNING etag`
   function eventData(pgResult) {
     return {url: selfURL, action: 'create', etag: pgResult.rows[0].etag, team: team, scopes: scopes}
