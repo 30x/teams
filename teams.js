@@ -105,7 +105,7 @@ function deleteTeam(req, res, id) {
   })
 }
 
-function updateTeam(req, res, id, patch) {
+function patchTeam(req, res, id, patch) {
   var selfURL =  makeSelfURL(req, id) 
   pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'update', function(allowed) {
     db.withTeamDo(req, res, id, function(team , etag) {
@@ -175,7 +175,7 @@ function requestHandler(req, res) {
       else if (req.method == 'DELETE') 
         deleteTeam(req, res, id)
       else if (req.method == 'PATCH') 
-        lib.getServerPostObject(req, res, (jso) => updateTeam(req, res, id, jso))
+        lib.getServerPostObject(req, res, (jso) => patchTeam(req, res, id, jso))
       else if (req.method == 'PUT') 
         lib.getServerPostObject(req, res, (jso) => putTeam(req, res, id, jso))
       else
