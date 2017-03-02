@@ -75,7 +75,6 @@ function updateTeamThen(req, id, selfURL, patchedTeam, scopes, etag, callback) {
     query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = '${etag}' RETURNING etag`
   else
     query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' RETURNING etag`
-  console.log(query)
   function eventData(pgResult) {
     return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, after: patchedTeam, scopes, scopes}
   }
