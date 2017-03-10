@@ -187,13 +187,28 @@ function requestHandler(req, res) {
   }
 }
 
-function start(){
-  db.init(function(){
+function init(callback) {
+  db.init(callback)
+}
+
+function run(){
+  init(function(){
     var port = process.env.PORT
     http.createServer(requestHandler).listen(port, function() {
       console.log(`server is listening on ${port}`)
     })
   })
+}
+
+function start() {
+  if (require.main === module) 
+    run()
+  else
+    module.exports = {
+      requestHandler:requestHandler,
+      paths: ['/teams'],
+      init: init
+    }
 }
 
 if (process.env.INTERNAL_SY_ROUTER_HOST == 'kubernetes_host_ip') 
