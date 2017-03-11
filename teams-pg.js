@@ -12,8 +12,8 @@ var config = {
   database: process.env.PG_DATABASE
 }
 
-var pool = new Pool(config)
-var eventProducer = new pge.eventProducer(pool)
+var pool
+var eventProducer
 
 function createTeamThen(req, id, selfURL, team, scopes, callback) {
   var query = `INSERT INTO teams (id, etag, data) values('${id}', '${lib.uuid4()}', '${JSON.stringify(team)}') RETURNING etag`
@@ -89,7 +89,9 @@ function updateTeamThen(req, id, selfURL, patchedTeam, scopes, etag, callback) {
   })
 }
 
-function init(callback) {
+function init(callback, aPool) {
+  pool = aPool || new Pool(config)
+  eventProducer = new pge.eventProducer(pool)
   var query = 'CREATE TABLE IF NOT EXISTS teams (id text primary key, etag text, data jsonb)'
   pool.connect(function(err, client, release) {
     if(err)

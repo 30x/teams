@@ -34,8 +34,8 @@ function updateTeamThen(req, res, id, selfURL, patchedTeam, scopes, etag, callba
   db.updateTeamThen(req, id, selfURL, patchedTeam, scopes, etag, withErrorHandling(req, res, callback))
 }
 
-function init(callback) {
-  db.init(callback)
+function init(callback, aPool) {
+  db.init(callback, aPool)
 }
 
 exports.createTeamThen = createTeamThen
