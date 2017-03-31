@@ -1,11 +1,12 @@
 'use strict'
-var Pool = require('pg').Pool
-var lib = require('http-helper-functions')
-var pge = require('pg-event-producer')
+const Pool = require('pg').Pool
+const lib = require('http-helper-functions')
+const pge = require('pg-event-producer')
+const randomBytes = require('crypto').randomBytes
 
-var TEAMS = '/teams/'
+const TEAMS = '/teams/'
 
-var config = {
+const config = {
   host: process.env.PG_HOST,
   user: process.env.PG_USER,
   password: process.env.PG_PASSWORD,
@@ -16,11 +17,11 @@ var pool
 var eventProducer
 
 function createTeamThen(req, id, selfURL, team, scopes, callback) {
-  var query = `INSERT INTO teams (id, etag, data) values('${id}', '${lib.uuid4()}', '${JSON.stringify(team)}') RETURNING etag`
+  var query = 'INSERT INTO teams (id, etag, data) values($1, $2, $3) RETURNING etag'
   function eventData(pgResult) {
     return {url: selfURL, action: 'create', etag: pgResult.rows[0].etag, team: team, scopes: scopes}
   }
-  eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
+  eventProducer.queryAndStoreEvent(req, query, [id, lib.uuid4(), JSON.stringify(team)], 'teams', eventData, function(err, pgResult, pgEventResult) {
     callback(err, pgResult.rows[0].etag)
   })
 }
@@ -44,8 +45,8 @@ function withTeamDo(req, id, callback) {
 
 function withTeamsForUserDo(req, user, callback) {
   //var query = "SELECT id FROM teams, jsonb_array_elements(teams.data->'members') AS member WHERE member = $1"
-  var query = `SELECT id FROM teams WHERE data->'members' ? '${user}'`
-  pool.query(query, function (err, pg_res) {
+  var query = "SELECT id FROM teams WHERE data->'members' ? $1"
+  pool.query(query, [user], function (err, pg_res) {
     if (err) {
       callback(err)
     }
@@ -56,11 +57,11 @@ function withTeamsForUserDo(req, user, callback) {
 }
     
 function deleteTeamThen(req, id, selfURL, scopes, callback) {
-  var query = `DELETE FROM teams WHERE id = '${id}' RETURNING *`
+  var query = 'DELETE FROM teams WHERE id = $1 RETURNING *'
   function eventData(pgResult) {
     return {url: TEAMS + id, action: 'delete', etag: pgResult.rows[0].etag, team: pgResult.rows[0].data, scopes: scopes}
   }
-  eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
+  eventProducer.queryAndStoreEvent(req, query, [id], 'teams', eventData, function(err, pgResult, pgEventResult) {
     if (err)
       callback(err)
     else
@@ -70,15 +71,18 @@ function deleteTeamThen(req, id, selfURL, scopes, callback) {
 
 function updateTeamThen(req, id, selfURL, patchedTeam, scopes, etag, callback) {
   var key = lib.internalizeURL(id, req.headers.host)
-  var query
-  if (etag) 
-    query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' AND etag = '${etag}' RETURNING etag`
-  else
-    query = `UPDATE teams SET (etag, data) = ('${lib.uuid4()}', '${JSON.stringify(patchedTeam)}') WHERE id = '${key}' RETURNING etag`
+  var query, args
+  if (etag) {
+    query = 'UPDATE teams SET (etag, data) = ($1, $2) WHERE id = $3 AND etag = $4 RETURNING etag'
+    args = [lib.uuid4(), JSON.stringify(patchedTeam), key, etag]
+  } else {
+    query = 'UPDATE teams SET (etag, data) = ($1, $2) WHERE id = $3 RETURNING etag'
+    args = [lib.uuid4(), JSON.stringify(patchedTeam), key]
+  }
   function eventData(pgResult) {
     return {url: selfURL, action: 'update', etag: pgResult.rows[0].etag, after: patchedTeam, scopes, scopes}
   }
-  eventProducer.queryAndStoreEvent(req, query, 'teams', eventData, function(err, pgResult, pgEventResult) {
+  eventProducer.queryAndStoreEvent(req, query, args, 'teams', eventData, function(err, pgResult, pgEventResult) {
     if (err)
       callback(err)
     else
