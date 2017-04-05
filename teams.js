@@ -7,6 +7,12 @@ const pLib = require('permissions-helper-functions')
 const rLib = require('response-helper-functions')
 
 const TEAMS = '/teams/'
+const COMPONENT_NAME = 'teams'
+var PERMISSIONS_CLIENT_TOKEN
+
+function log(functionName, text) {
+  console.log(Date.now(), COMPONENT_NAME, functionName, text)
+}
 
 function verifyBases(req, res, team, callback) {
   var bases = Object.keys(team.role)
@@ -57,7 +63,9 @@ function createTeam(req, res, team) {
           delete team._permissions; // unusual case where ; is necessary
           (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
         }
-        pLib.createPermissionsThen(lib.flowThroughHeaders(req), res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
+        var headers = lib.flowThroughHeaders(req)
+        headers['x-client-authorization'] = `Bearer ${PERMISSIONS_CLIENT_TOKEN}`
+        pLib.createPermissionsThen(headers, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
           // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
           // there will be a useless but harmless permissions document.
           // If we do things the other way around, a team without matching permissions could cause problems.
@@ -188,7 +196,28 @@ function requestHandler(req, res) {
 }
 
 function init(callback, aPool) {
-  db.init(callback, aPool)
+  // curl -s -d "grant_type=client_credentials&client_id=permissions-client&client_secret=permissionsecret" https://login.e2e.apigee.net/oauth/token --header "Content-Type: application/x-www-form-urlencoded;charset=utf-8" -H "accept: application/json;charset=utf-8" --silent | sed -E 's/.*access_token\"\:\"([^\"]+)\".*/\1/'`
+  //             grant_type=client_credentials&client_id=permissions-client&client_secret=permissionsecret
+  var clientID = process.env.PERMISSIONS_CLIENTID
+  var clientSecret = process.env.PERMISSIONS_CLIENTSECRET
+  var issuer = process.env.CLIENT_TOKEN_ISSUER
+  var headers = {'content-type': 'application/x-www-form-urlencoded;charset=utf-8', accept: 'application/json;charset=utf-8'}
+  var body = `grant_type=client_credentials&client_id=${clientID}&client_secret=${clientSecret}`
+  function errorFunction(rslt) {
+    log('init', `failed to retrieve client credentials ${rslt.statusCode} ${rslt.body}`)    
+    process.exit(-1)
+  } 
+  var errorHandler = rLib.errorHandler(errorFunction)
+  console.log('\n\n', `${issuer}/oauth/token`, headers, body, '\n\n')
+  lib.sendExternalRequestThen(errorHandler, 'POST', `${issuer}/oauth/token`, headers, body, function(clientRes) {
+    lib.getClientResponseBody(clientRes, function(body) {
+      if (clientRes.statusCode == 200) {
+        PERMISSIONS_CLIENT_TOKEN = JSON.parse(body).access_token
+        db.init(callback, aPool)
+      } else 
+        errorFunction({statusCode: clientRes.statusCode, body: body})
+    })
+  })
 }
 
 function run(){
