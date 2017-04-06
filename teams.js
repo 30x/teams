@@ -8,6 +8,10 @@ const rLib = require('response-helper-functions')
 
 const TEAMS = '/teams/'
 const COMPONENT_NAME = 'teams'
+
+const PERMISSIONS_CLIENTID = process.env.PERMISSIONS_CLIENTID
+const PERMISSIONS_CLIENTSECRET = process.env.PERMISSIONS_CLIENTSECRET
+const AUTH_URL = process.env.CLIENT_TOKEN_ISSUER + '/oauth/token'
 var PERMISSIONS_CLIENT_TOKEN
 
 function log(functionName, text) {
@@ -64,15 +68,19 @@ function createTeam(req, res, team) {
           (new pLib.Permissions(permissions)).resolveRelativeURLs(selfURL)
         }
         var headers = lib.flowThroughHeaders(req)
-        headers['x-client-authorization'] = `Bearer ${PERMISSIONS_CLIENT_TOKEN}`
-        pLib.createPermissionsThen(headers, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
-          // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
-          // there will be a useless but harmless permissions document.
-          // If we do things the other way around, a team without matching permissions could cause problems.
-          db.createTeamThen(req, res, id, selfURL, team, permissions.scopes, function(etag) {
-            team.self = selfURL 
-            addCalculatedProperties(team)
-            rLib.created(res, team, req.headers.accept, team.self, etag)
+        lib.withValidClientToken(res, PERMISSIONS_CLIENT_TOKEN, PERMISSIONS_CLIENTID, PERMISSIONS_CLIENTSECRET, AUTH_URL, function(newToken) {
+          if (newToken)
+            PERMISSIONS_CLIENT_TOKEN = newToken
+          headers['x-client-authorization'] = `Bearer ${PERMISSIONS_CLIENT_TOKEN}`
+          pLib.createPermissionsThen(headers, res, selfURL, permissions, function(err, permissionsURL, permissions, responseHeaders){
+            // Create permissions first. If we fail after creating the permissions resource but before creating the main resource, 
+            // there will be a useless but harmless permissions document.
+            // If we do things the other way around, a team without matching permissions could cause problems.
+            db.createTeamThen(req, res, id, selfURL, team, permissions.scopes, function(etag) {
+              team.self = selfURL 
+              addCalculatedProperties(team)
+              rLib.created(res, team, req.headers.accept, team.self, etag)
+            })
           })
         })
       }
@@ -196,28 +204,7 @@ function requestHandler(req, res) {
 }
 
 function init(callback, aPool) {
-  // curl -s -d "grant_type=client_credentials&client_id=permissions-client&client_secret=permissionsecret" https://login.e2e.apigee.net/oauth/token --header "Content-Type: application/x-www-form-urlencoded;charset=utf-8" -H "accept: application/json;charset=utf-8" --silent | sed -E 's/.*access_token\"\:\"([^\"]+)\".*/\1/'`
-  //             grant_type=client_credentials&client_id=permissions-client&client_secret=permissionsecret
-  var clientID = process.env.PERMISSIONS_CLIENTID
-  var clientSecret = process.env.PERMISSIONS_CLIENTSECRET
-  var issuer = process.env.CLIENT_TOKEN_ISSUER
-  var headers = {'content-type': 'application/x-www-form-urlencoded;charset=utf-8', accept: 'application/json;charset=utf-8'}
-  var body = `grant_type=client_credentials&client_id=${clientID}&client_secret=${clientSecret}`
-  function errorFunction(rslt) {
-    log('init', `failed to retrieve client credentials ${rslt.statusCode} ${rslt.body}`)    
-    process.exit(-1)
-  } 
-  var errorHandler = rLib.errorHandler(errorFunction)
-  console.log('\n\n', `${issuer}/oauth/token`, headers, body, '\n\n')
-  lib.sendExternalRequestThen(errorHandler, 'POST', `${issuer}/oauth/token`, headers, body, function(clientRes) {
-    lib.getClientResponseBody(clientRes, function(body) {
-      if (clientRes.statusCode == 200) {
-        PERMISSIONS_CLIENT_TOKEN = JSON.parse(body).access_token
-        db.init(callback, aPool)
-      } else 
-        errorFunction({statusCode: clientRes.statusCode, body: body})
-    })
-  })
+  db.init(callback, aPool)
 }
 
 function run(){
