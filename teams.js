@@ -183,7 +183,7 @@ function getTeamsForUser(req, res, user) {
 
 function getTeamsMisc(req, res) {
   pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'read', function(err, reason) {
-    db.withTeamsMiscDo(req, res, req.url, function(misc , etag) {
+    db.withTeamMiscDo(req, res, req.url, function(misc , etag) {
       misc.self = req.url
       rLib.found(res, misc, req.headers.accept, misc.self, etag)
     })
