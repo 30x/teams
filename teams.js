@@ -14,6 +14,11 @@ const PERMISSIONS_CLIENTSECRET = process.env.PERMISSIONS_CLIENTSECRET
 const AUTH_URL = process.env.CLIENT_TOKEN_ISSUER + '/oauth/token'
 var PERMISSIONS_CLIENT_TOKEN
 
+if (PERMISSIONS_CLIENTID == null || PERMISSIONS_CLIENTSECRET == null || AUTH_URL == null) {
+  console.log(PERMISSIONS_CLIENTID == null ? 'PERMISSIONS_CLIENTID must be set' : PERMISSIONS_CLIENTSECRET == null ? 'PERMISSIONS_CLIENTSECRET must be set' : 'AUTH_URL must be set')
+  process.exit(-1)
+}
+
 function log(functionName, text) {
   console.log(Date.now(), COMPONENT_NAME, functionName, text)
 }
@@ -176,12 +181,50 @@ function getTeamsForUser(req, res, user) {
     rLib.forbidden(res)
 }
 
+function getTeamsMisc(req, res) {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'read', function(err, reason) {
+    db.withTeamsMiscDo(req, res, req.url, function(misc , etag) {
+      misc.self = req.url
+      rLib.found(res, misc, req.headers.accept, misc.self, etag)
+    })
+  })  
+}
+
+function patchTeamsMisc(req, res, patch, verifier) {
+  pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'update', function() {
+    db.withTeamMiscDo(req, res, req.url, function(misc) {
+      lib.applyPatch(req, res, misc, patch, function(patchedMisc) {
+        verifier(patchedMisc, function(err) {
+          if (err)
+            rLib.badRequest(res, err)
+          else
+            db.updateTeamMiscThen(req, res, req.url, patchedMisc, function () {
+              patchedMisc.self = req.url 
+              rLib.found(res, patchedMisc, req.headers.accept, patchedMisc.self)
+            })
+        })
+      })
+    })
+  })
+}
+
+function verifyWellKnownTeams(wellKnownTeams, callback) {
+  callback()
+}
+
 function requestHandler(req, res) {
   if (req.url == '/teams') 
     if (req.method == 'POST') 
-      lib.getServerPostObject(req, res, (t) => createTeam(req, res, t))
+      lib.getServerPostObject(req, res, team => createTeam(req, res, team))
     else 
       rLib.methodNotAllowed(res, ['POST'])
+  else if (req.url == '/teams-well-known')
+    if (req.method == 'GET') 
+      getTeamsMisc(req, res)
+    else if (req.method == 'PATCH')
+      lib.getServerPostObject(req, res, patch => patchTeamsMisc(req, res, patch, verifyWellKnownTeams))
+    else 
+      rLib.methodNotAllowed(res, ['GET', 'PATCH'])
   else {
     var req_url = url.parse(req.url)
     if (req_url.pathname.startsWith(TEAMS)) {
@@ -222,7 +265,7 @@ function start() {
   else
     module.exports = {
       requestHandler:requestHandler,
-      paths: ['/teams'],
+      paths: ['/teams', '/teams-well-known'],
       init: init
     }
 }

@@ -34,6 +34,14 @@ function updateTeamThen(req, res, id, selfURL, patchedTeam, scopes, etag, callba
   db.updateTeamThen(req, id, selfURL, patchedTeam, scopes, etag, withErrorHandling(req, res, callback))
 }
 
+function withTeamMiscDo(req, res, id, callback) {
+  db.withTeamMiscDo(req, id, withErrorHandling(req, res, callback))
+}
+
+function updateTeamMiscThen(req, res, id, patchedMisc, callback) {
+  db.updateTeamMiscThen(req, id, patchedMisc, withErrorHandling(req, res, callback))  
+}
+
 function init(callback, aPool) {
   db.init(callback, aPool)
 }
@@ -43,4 +51,6 @@ exports.updateTeamThen = updateTeamThen
 exports.deleteTeamThen = deleteTeamThen
 exports.withTeamDo = withTeamDo
 exports.withTeamsForUserDo = withTeamsForUserDo
+exports.withTeamMiscDo = withTeamMiscDo
+exports.updateTeamMiscThen = updateTeamMiscThen
 exports.init = init
