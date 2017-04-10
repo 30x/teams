@@ -54,9 +54,9 @@ function verifyTeam(req, res, team, callback) {
       else
         callback(null)
     else
-      callback('team must have an array of members')
+      callback({msg: 'team must have an array of members'})
   else
-    calback('invalid JSON: "isA" property not set to "Team" ' + JSON.stringify(team))
+    callback({msg: 'invalid JSON: "isA" property not set to "Team"', body: team})
 }
 
 function createTeam(req, res, team) {
