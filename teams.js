@@ -242,7 +242,7 @@ function requestHandler(req, res) {
     } else if (req_url.pathname == '/teams' && req_url.search !== null)
       getTeamsForUser(req, res, req_url.search.substring(1))
     else
-      rLib.notFound(res, `//${req.headers.host}${req.url} not found`)
+      rLib.notFound(res, {msg: `//${req.headers.host}${req.url} not found`, component: 'teams'})
   }
 }
 

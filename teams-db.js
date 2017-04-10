@@ -6,7 +6,7 @@ const db = require('./teams-pg.js')
 function withErrorHandling(req, res, callback) {
   return function (err) {
     if (err == 404) 
-      rLib.notFound(res, `//${req.headers.host}${req.url} not found`)
+      rLib.notFound(res, {msg: `//${req.headers.host}${req.url} not found`, component: 'teams-db'})
     else if (err)
       rLib.internalError(res, err)
     else 
