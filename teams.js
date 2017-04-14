@@ -131,7 +131,7 @@ function patchTeam(req, res, id, patch) {
   pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'update', function(allowed) {
     db.withTeamDo(req, res, id, function(team , etag) {
       if (req.headers['if-match'] == etag) { 
-        lib.applyPatch(req, res, team, patch, function(patchedTeam) {
+        lib.applyPatch(req.headers, res, team, patch, function(patchedTeam) {
           verifyTeam(req, res, patchedTeam, function(err) {
             if (err)
               rLib.badRequest(res, err)
@@ -193,7 +193,7 @@ function getTeamsMisc(req, res) {
 function patchTeamsMisc(req, res, patch, verifier) {
   pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'update', function() {
     db.withTeamMiscDo(req, res, req.url, function(misc) {
-      lib.applyPatch(req, res, misc, patch, function(patchedMisc) {
+      lib.applyPatch(req.headers, res, misc, patch, function(patchedMisc) {
         verifier(patchedMisc, function(err) {
           if (err)
             rLib.badRequest(res, err)
