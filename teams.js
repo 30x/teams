@@ -6,7 +6,8 @@ const db = require('./teams-db.js')
 const pLib = require('permissions-helper-functions')
 const rLib = require('response-helper-functions')
 
-const TEAMS = '/teams/'
+const TEAM_PREFIX = '/az-tm-'
+const TEAMS = '/az-teams/'
 const COMPONENT_NAME = 'teams'
 
 const PERMISSIONS_CLIENTID = process.env.PERMISSIONS_CLIENTID
@@ -94,13 +95,13 @@ function createTeam(req, res, team) {
 }
 
 function makeSelfURL(req, key) {
-  return `${rLib.INTERNAL_URL_PREFIX}${TEAMS}${key}`
+  return `${rLib.INTERNAL_URL_PREFIX}${TEAM_PREFIX}${key}`
 }
 
 function addCalculatedProperties(team) {
   var externalSelf = lib.externalizeURLs(team.self)
-  team._permissions = `${rLib.INTERNAL_URL_PREFIX}/permissions?${externalSelf}`
-  team._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/permissions-heirs?${externalSelf}`  
+  team._permissions = `${rLib.INTERNAL_URL_PREFIX}/az-permissions?${externalSelf}`
+  team._permissionsHeirs = `${rLib.INTERNAL_URL_PREFIX}/az-permissions-heirs?${externalSelf}`  
 }
 
 function getTeam(req, res, id) {
@@ -116,8 +117,8 @@ function getTeam(req, res, id) {
 function deleteTeam(req, res, id) {
   pLib.ifAllowedThen(lib.flowThroughHeaders(req), res, req.url, '_self', 'delete', function() {
     db.deleteTeamThen(req, res, id, makeSelfURL(req, id), function (team, etag) {
-      pLib.deletePermissionsThen(lib.flowThroughHeaders(req), res, `${TEAMS}${id}`, function () {
-        console.log(`deleted permissions for ${TEAMS}${id}`)
+      pLib.deletePermissionsThen(lib.flowThroughHeaders(req), res, `${TEAM_PREFIX}${id}`, function () {
+        console.log(`deleted permissions for ${TEAM_PREFIX}${id}`)
       })
       team.self = makeSelfURL(req, id)
       addCalculatedProperties(team)
@@ -145,8 +146,8 @@ function patchTeam(req, res, id, patch) {
         })
       } else {
         var err = (req.headers['if-match'] === undefined) ? 'missing If-Match header' : 'If-Match header does not match etag ' + req.headers['If-Match'] + ' ' + etag
-        rLib.badRequest(res, err)
-      }      
+        rLib.preconditionFailed(res, err)
+      }
     })
   }, true)
 }
@@ -173,7 +174,7 @@ function getTeamsForUser(req, res, user) {
     db.withTeamsForUserDo(req, res, user, function (teamIDs) {
       var rslt = {
         self: req.url,
-        contents: teamIDs.map(id => `//${req.headers.host}${TEAMS}${id}`)
+        contents: teamIDs.map(id => `//${req.headers.host}${TEAM_PREFIX}${id}`)
       }
       rLib.found(res, rslt, req.headers.accept, rslt.self)
     })
@@ -213,13 +214,13 @@ function verifyWellKnownTeams(wellKnownTeams, callback) {
 }
 
 function requestHandler(req, res) {
-  if (req.url == '/teams') 
+  if (req.url == '/az-teams') 
     if (req.method == 'POST') 
       lib.getServerPostObject(req, res, team => createTeam(req, res, team))
     else 
       rLib.methodNotAllowed(res, ['POST'])
-  else if (req.url == '/teams-well-known')
-    if (req.method == 'GET') 
+  else if (req.url == '/az-well-known-teams')
+    if (req.method == 'GET')
       getTeamsMisc(req, res)
     else if (req.method == 'PATCH')
       lib.getServerPostObject(req, res, patch => patchTeamsMisc(req, res, patch, verifyWellKnownTeams))
@@ -227,8 +228,8 @@ function requestHandler(req, res) {
       rLib.methodNotAllowed(res, ['GET', 'PATCH'])
   else {
     var req_url = url.parse(req.url)
-    if (req_url.pathname.startsWith(TEAMS)) {
-      var id = req_url.pathname.substring(TEAMS.length)
+    if (req_url.pathname.startsWith(TEAM_PREFIX)) {
+      var id = req_url.pathname.substring(TEAM_PREFIX.length)
       if (req.method == 'GET')
         getTeam(req, res, id)
       else if (req.method == 'DELETE') 
@@ -239,7 +240,7 @@ function requestHandler(req, res) {
         lib.getServerPostObject(req, res, (jso) => putTeam(req, res, id, jso))
       else
         rLib.methodNotAllowed(res, ['GET', 'DELETE', 'PATCH', 'PUT'])
-    } else if (req_url.pathname == '/teams' && req_url.search !== null)
+    } else if (req_url.pathname == '/az-teams' && req_url.search !== null)
       getTeamsForUser(req, res, req_url.search.substring(1))
     else
       rLib.notFound(res, {msg: `//${req.headers.host}${req.url} not found`, component: 'teams'})
@@ -265,7 +266,7 @@ function start() {
   else
     module.exports = {
       requestHandler:requestHandler,
-      paths: ['/teams', '/teams-well-known'],
+      paths: ['/az-teams', '/az-well-known-teams', '/az-tm-'],
       init: init
     }
 }

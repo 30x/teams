@@ -4,7 +4,7 @@ const lib = require('http-helper-functions')
 const pge = require('pg-event-producer')
 const randomBytes = require('crypto').randomBytes
 
-const TEAMS = '/teams/'
+const TEAMS = '/az-teams/'
 
 const config = {
   host: process.env.PG_HOST,
@@ -148,15 +148,15 @@ function init(callback, aPool) {
                   console.error('error creating teams_misc table', err)
                 } else {
                   query = "INSERT INTO teams_misc (id, data) values($1, $2)"
-                  client.query(query, ['/teams-well-known', {}], function(err, pgResult) {
+                  client.query(query, ['/az-well-known-teams', {}], function(err, pgResult) {
                     if (err) {
                       release()
                       if (err.code == '23505') {
-                        console.log('teams-pg: /teams-well-known already existed')
+                        console.log('teams-pg: /az-well-known-teams already existed')
                         console.log('teams-pg: connected to PG, config: ', config)
                         eventProducer.init(callback)
                       } else  
-                        console.error('error adding /teams-well-known to teams_misc table', err)
+                        console.error('error adding /az-well-known-teams to teams_misc table', err)
                     } else {
                       release()
                       console.log('teams-pg: connected to PG, config: ', config)

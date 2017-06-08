@@ -17,7 +17,7 @@ spec:
         routable: "true"
       annotations:
         privateHosts: sso.k8s.dev
-        privatePaths: 3000:/teams
+        privatePaths: 3000:/az-teams
     spec:
       containers:
       - name: teams
